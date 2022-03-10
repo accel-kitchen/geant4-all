@@ -1,0 +1,7 @@
+/home/g4user/geant4/geant4-BNCT/TestBench/CMakeFiles/install/strip.dir
+/home/g4user/geant4/geant4-BNCT/TestBench/CMakeFiles/install/local.dir
+/home/g4user/geant4/geant4-BNCT/TestBench/CMakeFiles/install.dir
+/home/g4user/geant4/geant4-BNCT/TestBench/CMakeFiles/list_install_components.dir
+/home/g4user/geant4/geant4-BNCT/TestBench/CMakeFiles/rebuild_cache.dir
+/home/g4user/geant4/geant4-BNCT/TestBench/CMakeFiles/edit_cache.dir
+/home/g4user/geant4/geant4-BNCT/TestBench/CMakeFiles/Application_Main.dir

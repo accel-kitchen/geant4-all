@@ -1,0 +1,1 @@
+/home/g4user/geant4/geant4-BNCT/source/../bin/Application_Main
