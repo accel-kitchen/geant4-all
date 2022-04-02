@@ -8,14 +8,14 @@
 #include "G4UImanager.hh"
 #include "G4VisExecutive.hh"
 #include "G4UIExecutive.hh"
-#include "QGSP_BIC_HP.hh"
+#include "QGSP_INCLXX_HP.hh"
 
 //-------------------------------------------------------------------------------
   int main( int argc, char** argv )
 //-------------------------------------------------------------------------------
 {
    // ============= [ Setting up the application environment ] ================
-   typedef  QGSP_BIC_HP PhysicsList;                   // Physics List
+   typedef  QGSP_INCLXX_HP PhysicsList;                   // Physics List
    G4String nameMainMacro = "GlobalSetup.mac";      // Initialization  macros
    // =========================================================================
 
