@@ -1,1 +1,0 @@
-/home/g4user/geant4/geant4-tracking/source/../bin/Application_Main

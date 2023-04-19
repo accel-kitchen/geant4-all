@@ -1,0 +1,1 @@
+/home/g4user/geant4/geant4-sample/source/../bin/Application_Main
