@@ -1,0 +1,11 @@
+/vis/enable
+/vis/open OGLSQt
+/vis/scene/create
+/vis/scene/add/volume
+/vis/scene/add/trajectories
+/vis/scene/add/hits
+/vis/scene/endOfEventAction accumulate
+/vis/viewer/set/viewpointThetaPhi 90 0
+/vis/viewer/set/style surface
+/vis/sceneHandler/attach
+/vis/viewer/flush
