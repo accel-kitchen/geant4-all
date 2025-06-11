@@ -34,13 +34,36 @@
    visManager->Initialize();
 
 // Start interactive session
-   auto uiExec = new G4UIExecutive( argc, argv );
    G4UImanager*  uiManager = G4UImanager::GetUIpointer();
-   uiManager->ApplyCommand( "/control/execute GlobalSetup.mac" );
-   uiExec->SessionStart();
+   
+   // コマンドライン引数でmacファイルが指定されている場合
+   if ( argc > 1 ) {
+     // バッチモードかGUIモードかをファイル名で判断
+     G4String macFile = argv[1];
+     if ( macFile.find("batch") != std::string::npos || 
+          macFile.find("test") != std::string::npos ) {
+       // バッチモード実行
+       G4String command = "/control/execute ";
+       command += argv[1];
+       uiManager->ApplyCommand( command );
+     } else {
+       // GUIモードで実行
+       auto uiExec = new G4UIExecutive( argc, argv );
+       G4String command = "/control/execute ";
+       command += argv[1];
+       uiManager->ApplyCommand( command );
+       uiExec->SessionStart();
+       delete uiExec;
+     }
+   } else {
+     // デフォルトでGUIモード
+     auto uiExec = new G4UIExecutive( argc, argv );
+     uiManager->ApplyCommand( "/control/execute TestBench/GlobalSetup.mac" );
+     uiExec->SessionStart();
+     delete uiExec;
+   }
 
 // Job termination
-   delete uiExec;
    delete visManager;
    delete runManager;
 
