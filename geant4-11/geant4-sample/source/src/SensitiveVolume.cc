@@ -53,12 +53,12 @@
      std::set<G4int> hitSet(hitDetectors.begin(), hitDetectors.end());
      
      // 各検出器ペアについてコインシデンスをチェック
-     // 下段: CopyNo 0-60 (X=-3.0mから3.0m)
-     // 上段: CopyNo 61-121 (X=-3.0mから3.0m)
-     // ペア関係: 下段CopyNo i に対して上段CopyNo (i+61)
+     // 下段: CopyNo 0-20 (X=-6.0mから6.0m)
+     // 上段: CopyNo 21-41 (X=-6.0mから6.0m)
+     // ペア関係: 下段CopyNo i に対して上段CopyNo (i+21)
      
-     for (G4int lowerCopyNo = 0; lowerCopyNo <= 60; lowerCopyNo++) {
-       G4int upperCopyNo = lowerCopyNo + 61;
+     for (G4int lowerCopyNo = 0; lowerCopyNo <= 20; lowerCopyNo++) {
+       G4int upperCopyNo = lowerCopyNo + 21;
        
        // 上下両方の検出器にヒットしているかチェック
        if (hitSet.find(lowerCopyNo) != hitSet.end() && 

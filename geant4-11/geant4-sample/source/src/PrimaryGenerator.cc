@@ -40,7 +40,7 @@ G4double PrimaryGenerator::fC_tot = 0.0;
     fpParticleGun{nullptr},
     fpMessenger{nullptr},
     fUseZenithDistribution{true},
-    fMaxZenithAngle{20.0*deg},
+    fMaxZenithAngle{1.0*deg},
     fSphereRadius{200.0*m},
     fCircleRadius{10.0*m}
 //------------------------------------------------------------------------------
@@ -110,17 +110,7 @@ G4double PrimaryGenerator::fC_tot = 0.0;
   // 確率密度関数: f(θ) ∝ cos²(θ) * sin(θ) (0 ≤ θ ≤ θ_max)
   // 累積分布関数の逆関数を用いてサンプリング
   
-  G4double cosTheta_max = std::cos(fMaxZenithAngle);
-  G4double u = G4UniformRand(); // [0,1]の一様乱数
-  
-  // cos²θ分布の累積分布関数の逆関数
-  // F(θ) = (1 - cos³(θ)) / (1 - cos³(θ_max))
-  // F⁻¹(u) = arccos((1 - u*(1 - cos³(θ_max)))^(1/3))
-  G4double cosTheta_max_cubed = cosTheta_max * cosTheta_max * cosTheta_max;
-  G4double cosTheta_cubed = 1.0 - u * (1.0 - cosTheta_max_cubed);
-  G4double cosTheta = std::pow(cosTheta_cubed, 1.0/3.0);
-  
-  return std::acos(cosTheta);
+  return 5.0 * pi / 180.0 * G4UniformRand();
 }
 
 //------------------------------------------------------------------------------
@@ -136,8 +126,8 @@ G4double PrimaryGenerator::fC_tot = 0.0;
 //------------------------------------------------------------------------------
 {
   // Z=15m平面上で X∈[-15,15]m、Y∈[-10,10]m の範囲内でランダムな点を選択
-  G4double x = -15.0*m + 30.0*m * G4UniformRand(); // [-10, 10]m
-  G4double y = -10.0*m + 15.0*m * G4UniformRand();   // [-5, 5]m
+  G4double x = -10.0*m + 20.0*m * G4UniformRand(); // [-10, 10]m
+  G4double y = -3.0*m + 6.0*m * G4UniformRand();   // [-5, 5]m
   G4double z = 15.0*m;                               // 固定値
   
   return G4ThreeVector(x, y, z);
