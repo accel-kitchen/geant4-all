@@ -126,10 +126,10 @@ Block::Block(G4String name, G4double pos_X, G4double pos_Y, G4double pos_Z, G4do
    auto threeVect_SoilBlock5 = G4ThreeVector(6.4*m, 0, 6.0*m);
    new G4PVPlacement(0, threeVect_SoilBlock5, "PhysVol_SoilBlock5", logVol_SoilBlock5, physVol_World, false, 4);
 
-  /////// 検出器アレイ (コインシデンス測定用上下2段)
+  /////// 検出器アレイ (2次元配列による2段構成)
    // プラスチックシンチレータ材料
    auto materi_Detector = materi_Man->FindOrBuildMaterial("G4_PLASTIC_SC_VINYLTOLUENE");
-   auto solid_Detector = new G4Box("Solid_Detector", 25.0*cm, 25.0*cm, 0.5*cm); // 10cm×10cm×1cm
+   auto solid_Detector = new G4Box("Solid_Detector", 1.0*cm, 1.0*cm, 0.5*cm); // 2cm×2cm×1cm
    auto logVol_Detector = new G4LogicalVolume(solid_Detector, materi_Detector, "LogVol_Detector");
    
    // 検出器の可視化設定
@@ -142,35 +142,34 @@ Block::Block(G4String name, G4double pos_X, G4double pos_Y, G4double pos_Z, G4do
    auto SDmanDetector = G4SDManager::GetSDMpointer();
    SDmanDetector->AddNewDetector(DetectorSV);
    
-   // X=-3mから3mまで10cm間隔で上下2段に配置
-   // CopyNo と検出器位置の対応関係:
-   // 下段 (Z=0):
-   // CopyNo  0: X = -3.0m, Z = 0
-   // CopyNo  1: X = -2.9m, Z = 0
-   // ...
-   // CopyNo 60: X =  3.0m, Z = 0
-   // 上段 (Z=10cm):
-   // CopyNo 61: X = -3.0m, Z = 10cm
-   // CopyNo 62: X = -2.9m, Z = 10cm
-   // ...
-   // CopyNo 121: X = 3.0m, Z = 10cm
+   // モジュール配置 (-6mから6m、60cm間隔で21個のモジュール)
+   // 各モジュールは20×20の2cm×2cmシンチレータから構成
+   // CopyNo形式: AABXXYY (AA: モジュール番号00-20, B: 層番号0-1, XX: X位置00-19, YY: Y位置00-19)
    
-   G4int detectorCount = 0;
-   
-   // 下段の検出器 (Z=0)
-   for (G4double x = -6.0*m; x <= 6.0*m; x += 0.6*m) {
-     auto threeVect_Detector = G4ThreeVector(x, 0, 0);
-     new G4PVPlacement(0, threeVect_Detector, "PhysVol_Detector_Lower", logVol_Detector, 
-                       physVol_World, false, detectorCount);
-     detectorCount++;
-   }
-   
-   // 上段の検出器 (Z=10cm)
-   for (G4double x = -6.0*m; x <= 6.0*m; x += 0.6*m) {
-     auto threeVect_Detector = G4ThreeVector(x, 0, 50.0*cm);
-     new G4PVPlacement(0, threeVect_Detector, "PhysVol_Detector_Upper", logVol_Detector, 
-                       physVol_World, false, detectorCount);
-     detectorCount++;
+   for (G4int moduleID = 0; moduleID < 21; moduleID++) {
+     G4double moduleX = -6.0*m + moduleID * 0.6*m; // モジュールのX位置
+     
+     // 各モジュール内の2次元シンチレータ配列
+     for (G4int layer = 0; layer < 2; layer++) { // 2層
+       G4double layerZ = (layer == 0) ? 0.0*cm : 20.0*cm; // 下段と上段の距離20cm
+       
+       for (G4int ix = 0; ix < 20; ix++) { // X方向20個
+         for (G4int iy = 0; iy < 20; iy++) { // Y方向20個
+           // 各シンチレータの位置（モジュール中心からの相対位置）
+           G4double scintX = moduleX + (-19.0 + 2.0*ix) * cm; // -19cm~+19cm (2cm間隔)
+           G4double scintY = (-19.0 + 2.0*iy) * cm;
+           G4double scintZ = layerZ;
+           
+           // CopyNo計算: AABXXYY形式
+           G4int copyNo = moduleID * 100000 + layer * 10000 + ix * 100 + iy;
+           
+           auto threeVect_Detector = G4ThreeVector(scintX, scintY, scintZ);
+           G4String physVolName = (layer == 0) ? "PhysVol_Detector_Lower" : "PhysVol_Detector_Upper";
+           new G4PVPlacement(0, threeVect_Detector, physVolName, logVol_Detector, 
+                           physVol_World, false, copyNo);
+         }
+       }
+     }
    }
 
 /////// Return the physical world

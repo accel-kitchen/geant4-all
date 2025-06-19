@@ -37,7 +37,7 @@
 //------------------------------------------------------------------------------
   void SensitiveVolume::EndOfEvent(G4HCofThisEvent*)
 {
-   // コインシデンス測定のロジック
+   // 2次元配列コインシデンス測定のロジック
    // 各トラックについて、上下の検出器でコインシデンスがあったかチェック
    
    for (const auto& trackEntry : trackHits) {
@@ -52,29 +52,51 @@
      // ヒットした検出器をセットに変換（重複除去のため）
      std::set<G4int> hitSet(hitDetectors.begin(), hitDetectors.end());
      
-     // 各検出器ペアについてコインシデンスをチェック
-     // 下段: CopyNo 0-20 (X=-6.0mから6.0m)
-     // 上段: CopyNo 21-41 (X=-6.0mから6.0m)
-     // ペア関係: 下段CopyNo i に対して上段CopyNo (i+21)
+     // モジュールごとにコインシデンスをチェック
+     // CopyNo形式: AABXXYY (AA: モジュール00-20, B: 層0-1, XX: X位置00-19, YY: Y位置00-19)
      
-     for (G4int lowerCopyNo = 0; lowerCopyNo <= 20; lowerCopyNo++) {
-       G4int upperCopyNo = lowerCopyNo + 21;
+     std::vector<std::pair<G4int, G4int>> coincidencePairs;
+     
+     for (G4int moduleID = 0; moduleID < 21; moduleID++) {
+       // このモジュールでコインシデンスを探す
+       std::set<G4int> lowerHits, upperHits;
        
-       // 上下両方の検出器にヒットしているかチェック
-       if (hitSet.find(lowerCopyNo) != hitSet.end() && 
-           hitSet.find(upperCopyNo) != hitSet.end()) {
+       // モジュール内の上下層のヒットを分類
+       for (G4int copyNo : hitSet) {
+         G4int module = copyNo / 100000;
+         G4int layer = (copyNo / 10000) % 10;
          
-         // コインシデンス検出！上段の検出器CopyNoを記録
-         std::ofstream outFile("tracking.dat", std::ios::app);
-         outFile << std::setw(4) << upperCopyNo << "\t";
-         outFile.close();
-         
-         // このトラックを記録済みとしてマーク
-         recordedTrackIDs.insert(trackID);
-         
-         // 1つのトラックにつき1回だけ記録するのでbreak
-         break;
+         if (module == moduleID) {
+           if (layer == 0) {
+             lowerHits.insert(copyNo);
+           } else if (layer == 1) {
+             upperHits.insert(copyNo);
+           }
+         }
        }
+       
+       // 上下両方にヒットがあるかチェック
+       if (!lowerHits.empty() && !upperHits.empty()) {
+         // 最初のヒットペアを記録
+         G4int lowerCopyNo = *lowerHits.begin();
+         G4int upperCopyNo = *upperHits.begin();
+         coincidencePairs.push_back(std::make_pair(lowerCopyNo, upperCopyNo));
+       }
+     }
+     
+     // コインシデンスが検出された場合、出力ファイルに記録
+     if (!coincidencePairs.empty()) {
+       std::ofstream outFile("tracking.dat", std::ios::app);
+       
+       for (size_t i = 0; i < coincidencePairs.size(); i++) {
+         if (i > 0) outFile << "\t"; // ペア間の区切り
+         outFile << coincidencePairs[i].first << "\t" << coincidencePairs[i].second;
+       }
+       outFile << "\n"; // イベント終了で改行
+       outFile.close();
+       
+       // このトラックを記録済みとしてマーク
+       recordedTrackIDs.insert(trackID);
      }
    }
 
