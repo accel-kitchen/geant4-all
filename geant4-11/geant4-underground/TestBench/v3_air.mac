@@ -1,0 +1,18 @@
+# V3: 土なし (空気だけ) の 2 層テレスコープ。解析式 analysis/feasibility.py --air と比べる
+/control/verbose 1
+/run/numberOfThreads 20
+/run/setCut 0.1 mm
+/muo/run/stage full
+/muo/out/dir runs
+/muo/out/prefix v3_air
+/muo/soil/enable false
+/muo/det/nxy 30 30
+/muo/det/pitch 2 cm
+/muo/det/gap 30 cm
+/muo/source/zenithMax 60 deg
+/muo/source/eLow 0.15 GeV
+/muo/source/eHigh 500 GeV
+/muo/source/targetRadius 1 m
+/run/initialize
+/run/printProgress 200000
+/run/beamOn 400000

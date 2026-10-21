@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ミュオグラフィ検出器 Geant4 シミュレーション計画</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+/* Layout: 製図の表題欄を冒頭に置き、左に固定の目次、右に本文1列。広い表は枠内でだけ横スクロールする。 */
+:root{
+  --bg:#EDF0F2; --surface:#FFFFFF; --surface-2:#F5F7F8;
+  --ink:#14202B; --ink-2:#425260; --muted:#677683;
+  --rule:#D3DADF; --rule-2:#B4BEC6;
+  --accent:#1D4ED8; --accent-ink:#1A3FA8; --accent-soft:#E2E9FB;
+  --sand:#DCC38F; --clay:#B8774F; --rock:#8A9097; --water:#9CC3D8;
+  --ok:#1B7A52; --ok-soft:#DDF1E7;
+  --warn:#8F5A00; --warn-soft:#FAEBCB;
+  --crit:#B3342A; --crit-soft:#F9DFDC;
+  --f-display:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  --f-body:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D141A; --surface:#141E26; --surface-2:#1A2630;
+    --ink:#E6ECF1; --ink-2:#B6C2CC; --muted:#8997A3;
+    --rule:#26323C; --rule-2:#3A4955;
+    --accent:#7C9CFF; --accent-ink:#A9BFFF; --accent-soft:#1B2848;
+    --sand:#A08A55; --clay:#8E5A39; --rock:#5C646C; --water:#3F6479;
+    --ok:#5BC59A; --ok-soft:#143427;
+    --warn:#E3B04F; --warn-soft:#3A2D0F;
+    --crit:#F08A80; --crit-soft:#401C19;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D141A; --surface:#141E26; --surface-2:#1A2630;
+  --ink:#E6ECF1; --ink-2:#B6C2CC; --muted:#8997A3;
+  --rule:#26323C; --rule-2:#3A4955;
+  --accent:#7C9CFF; --accent-ink:#A9BFFF; --accent-soft:#1B2848;
+  --sand:#A08A55; --clay:#8E5A39; --rock:#5C646C; --water:#3F6479;
+  --ok:#5BC59A; --ok-soft:#143427;
+  --warn:#E3B04F; --warn-soft:#3A2D0F;
+  --crit:#F08A80; --crit-soft:#401C19;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:400 15px/1.85 var(--f-body);
+  padding-block:0;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3{font-family:var(--f-display); text-wrap:balance; margin:0}
+p{margin:0}
+a{color:var(--accent-ink)}
+code,pre,.mono{font-family:var(--f-mono)}
+code{font-size:.88em; background:var(--surface-2); border:1px solid var(--rule); padding:1px 5px; border-radius:3px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.sheet{max-width:1200px; margin:0 auto; padding-block:28px 72px}
+
+/* ---------- title block ---------- */
+.tblock{background:var(--surface); border:1px solid var(--ink); }
+.tblock-main{padding:26px 28px 22px; border-bottom:1px solid var(--ink)}
+.eyebrow{font:500 12px/1.4 var(--f-mono); letter-spacing:.08em; color:var(--muted); text-transform:uppercase}
+.tblock h1{font-size:clamp(26px,4.2vw,38px); line-height:1.3; margin-top:8px; font-weight:700}
+.tblock-sub{margin-top:10px; color:var(--ink-2); max-width:44em}
+.tcells{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.tcell{padding:10px 16px 12px; border-right:1px solid var(--rule-2); border-top:1px solid var(--rule-2); margin-top:-1px; margin-right:-1px}
+.tcell .k{font:500 11px/1.4 var(--f-body); letter-spacing:.06em; color:var(--muted)}
+.tcell .v{font-size:13.5px; line-height:1.55; margin-top:2px}
+.tcell .v.mono{font-size:12.5px}
+
+/* ---------- frame ---------- */
+.frame{display:grid; grid-template-columns:1fr; gap:28px; margin-top:28px}
+@media (min-width:1020px){ .frame{grid-template-columns:200px minmax(0,1fr); gap:44px} }
+.toc{font-size:13px; line-height:1.5}
+@media (min-width:1020px){ .toc{position:sticky; top:calc(20px + env(safe-area-inset-top, 0px)); align-self:start; max-height:calc(100vh - 40px); overflow:auto} }
+.toc .eyebrow{margin-bottom:10px}
+.toc ol{list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:4px 18px}
+@media (min-width:1020px){ .toc ol{display:block} }
+.toc li{margin:0}
+.toc a{display:block; padding:5px 0 5px 12px; color:var(--ink-2); text-decoration:none; border-left:2px solid var(--rule)}
+.toc a:hover{color:var(--ink); border-left-color:var(--rule-2)}
+.toc a[aria-current="true"]{color:var(--accent-ink); border-left-color:var(--accent); font-weight:500}
+.toc .n{font-family:var(--f-mono); font-size:11.5px; color:var(--muted); margin-right:6px}
+
+main{min-width:0; display:flex; flex-direction:column; gap:56px}
+section{min-width:0}
+.sec-head{display:flex; align-items:baseline; gap:12px; padding-bottom:10px; margin-bottom:20px; border-bottom:2px solid var(--ink)}
+.sec-head .n{font:500 14px/1 var(--f-mono); color:var(--accent-ink)}
+.sec-head h2{font-size:clamp(20px,2.6vw,25px); line-height:1.4; font-weight:700}
+h3{font-size:16.5px; line-height:1.5; font-weight:700; margin:28px 0 8px}
+h3:first-child{margin-top:0}
+.prose{max-width:42em; display:flex; flex-direction:column; gap:12px}
+.prose + .prose, .prose + .tbl, .tbl + .prose, .prose + .figure, .figure + .prose, .tbl + .tbl{margin-top:16px}
+.lead{font-size:16px; color:var(--ink)}
+ul.plain{margin:0; padding-left:1.3em; display:flex; flex-direction:column; gap:4px}
+ul.plain li::marker{color:var(--muted)}
+.small{font-size:13px; line-height:1.7; color:var(--ink-2)}
+.dim{color:var(--muted)}
+
+/* ---------- brief ---------- */
+.brief{background:var(--surface); border:1px solid var(--rule-2); padding:22px 26px}
+.brief h2{font-size:17px; margin-bottom:12px}
+.brief ol{margin:0; padding-left:1.4em; display:flex; flex-direction:column; gap:8px; max-width:46em}
+.brief li::marker{font-family:var(--f-mono); color:var(--accent-ink); font-size:.9em}
+.brief b{font-weight:700}
+
+/* ---------- tables ---------- */
+.tbl{overflow-x:auto; background:var(--surface); border:1px solid var(--rule-2)}
+table{border-collapse:collapse; width:100%; font-size:13.5px; line-height:1.65}
+th{font:500 12px/1.4 var(--f-body); letter-spacing:.04em; color:var(--muted); text-align:left; padding:9px 12px; border-bottom:1px solid var(--rule-2); background:var(--surface-2); white-space:nowrap}
+td{padding:10px 12px; border-bottom:1px solid var(--rule); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.id,th.id{font-family:var(--f-mono); font-size:12.5px; color:var(--accent-ink); white-space:nowrap}
+td.num,th.num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+td.c,th.c{text-align:center}
+.tbl.wide table{min-width:860px}
+.tbl.mid table{min-width:640px}
+td .sub{display:block; color:var(--muted); font-size:12.5px}
+.hit{background:var(--ok-soft); color:var(--ok); font-weight:500}
+.miss{background:var(--crit-soft); color:var(--crit); font-weight:500}
+caption{caption-side:top; text-align:left; font:500 12.5px/1.5 var(--f-body); color:var(--ink-2); padding:10px 12px 0}
+
+/* ---------- tags ---------- */
+.tag{display:inline-block; font:500 11.5px/1.5 var(--f-body); padding:0 8px; border:1px solid currentColor; border-radius:3px; white-space:nowrap; vertical-align:1px}
+.tag.must{color:var(--crit); background:var(--crit-soft)}
+.tag.rec{color:var(--accent-ink); background:var(--accent-soft)}
+.tag.opt{color:var(--muted); background:var(--surface-2)}
+.tag.tbd{color:var(--warn); background:var(--warn-soft)}
+.tag.ok{color:var(--ok); background:var(--ok-soft)}
+
+/* ---------- callout ---------- */
+.note{background:var(--surface-2); border:1px solid var(--rule-2); padding:14px 18px; max-width:46em}
+.note .t{font:500 12px/1.4 var(--f-body); letter-spacing:.06em; color:var(--muted); margin-bottom:4px}
+.note.warn{background:var(--warn-soft); border-color:var(--warn)}
+.note.warn .t{color:var(--warn)}
+.note p + p{margin-top:6px}
+
+/* ---------- figures ---------- */
+.figure{background:var(--surface); border:1px solid var(--rule-2); padding:16px 16px 12px}
+.figure figcaption{font-size:13px; color:var(--ink-2); line-height:1.7; margin-top:8px; max-width:56em}
+.figure figcaption b{font-weight:500; color:var(--ink)}
+.figure .scroll{overflow-x:auto}
+.figure svg{display:block; width:100%; height:auto}
+.figure svg.diagram{min-width:640px}
+.charts{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px}
+.chart{display:block; width:100%; height:auto; font-family:var(--f-body)}
+.chart text{font-size:11.5px}
+.chart .c-tick{fill:var(--muted)}
+.chart .c-lab{fill:var(--ink); font-size:12px}
+.chart .c-strong{font-weight:700; font-size:13px}
+.chart .c-grid{stroke:var(--rule); stroke-width:1}
+.chart .c-line{fill:none; stroke:var(--accent); stroke-width:2; stroke-linejoin:round}
+.chart .c-dot{fill:var(--accent); stroke:var(--surface); stroke-width:2}
+.chart .c-bar{fill:var(--accent)}
+.chart-title{font:500 13px/1.5 var(--f-body); color:var(--ink); margin-bottom:6px}
+
+/* diagram svg classes */
+.d-box{fill:var(--surface); stroke:var(--ink); stroke-width:1.2}
+.d-box.a{fill:var(--accent-soft); stroke:var(--accent)}
+.d-bar{fill:var(--surface-2); stroke:var(--rule-2); stroke-width:1}
+.d-line{stroke:var(--ink-2); stroke-width:1.4; fill:none}
+.d-arrow{fill:var(--ink-2)}
+.d-t{fill:var(--ink); font-size:13px; font-weight:700}
+.d-s{fill:var(--ink-2); font-size:11px}
+.d-m{fill:var(--muted); font-size:10.5px; font-family:var(--f-mono)}
+.d-br{stroke:var(--muted); stroke-width:1; fill:none}
+.g-sand{fill:var(--sand)} .g-clay{fill:var(--clay)} .g-water{fill:var(--water)}
+.g-wall{fill:var(--rock)}
+.g-cone{fill:var(--accent); fill-opacity:.12; stroke:var(--accent); stroke-width:1.2; stroke-dasharray:5 4}
+.g-det{fill:var(--accent); stroke:var(--surface); stroke-width:1}
+.g-void{fill:var(--surface); stroke:var(--ink); stroke-width:1.2}
+.g-obj{fill:var(--rock); stroke:var(--ink); stroke-width:1.2}
+.g-dim{stroke:var(--ink-2); stroke-width:1; fill:none}
+.g-ground{stroke:var(--ink); stroke-width:2}
+.g-t{fill:var(--ink); font-size:12px}
+.g-ts{fill:var(--ink-2); font-size:11px}
+.g-tl{fill:var(--ink); font-size:12px; font-weight:700}
+svg text{font-family:var(--f-body)}
+
+/* ---------- decisions ---------- */
+.decs{display:flex; flex-direction:column; border:1px solid var(--rule-2); background:var(--surface)}
+.dec{display:grid; grid-template-columns:1fr; gap:6px 24px; padding:18px 20px; border-bottom:1px solid var(--rule)}
+.dec:last-child{border-bottom:0}
+@media (min-width:860px){ .dec{grid-template-columns:200px minmax(0,1fr)} }
+.dec h3{margin:0; font-size:15.5px}
+.dec .did{font:500 12px/1.4 var(--f-mono); color:var(--accent-ink); display:block; margin-bottom:2px}
+.dec dl{margin:0; display:grid; grid-template-columns:4.2em minmax(0,1fr); gap:6px 12px; font-size:14px; line-height:1.75}
+.dec dt{font:500 12px/1.9 var(--f-body); color:var(--muted); letter-spacing:.04em}
+.dec dd{margin:0}
+pre{background:var(--surface-2); border:1px solid var(--rule-2); padding:14px 16px; margin:0; overflow-x:auto; font-size:12.5px; line-height:1.7; color:var(--ink)}
+pre .c{color:var(--muted)}
+.formula{font-family:var(--f-mono); font-size:13px; background:var(--surface-2); border:1px solid var(--rule); padding:10px 14px; overflow-x:auto; white-space:pre; line-height:1.7}
+
+/* ---------- gantt ---------- */
+.gantt{overflow-x:auto; overflow-y:hidden; background:var(--surface); border:1px solid var(--rule-2)}
+.g-in{min-width:880px; --lw:230px}
+.g-row{display:grid; grid-template-columns:var(--lw) minmax(0,1fr); border-bottom:1px solid var(--rule); align-items:center}
+.g-row:last-child{border-bottom:0}
+.g-label{padding:7px 12px; font-size:13px; line-height:1.5}
+.g-label .sc{display:block; font:400 11.5px/1.4 var(--f-mono); color:var(--muted)}
+.g-track{display:grid; grid-template-columns:repeat(36,1fr); align-items:center; padding:7px 0; position:relative}
+.g-bar{grid-row:1; height:18px; background:var(--accent); border-radius:2px; margin:0 1px}
+.g-bar.b2{background:var(--accent-ink); opacity:.8}
+.g-head .g-track{padding:0}
+.g-yr{grid-row:1; font:500 12px/1.4 var(--f-body); padding:6px 8px; background:var(--surface-2); border-left:1px solid var(--rule-2); color:var(--ink-2); white-space:nowrap; overflow:hidden}
+.g-mo{grid-row:1; font:400 10.5px/1 var(--f-mono); color:var(--muted); text-align:center; padding:5px 0}
+.g-body{position:relative}
+.g-ov{position:absolute; left:var(--lw); right:0; top:0; bottom:0; pointer-events:none}
+.g-fy{position:absolute; top:0; bottom:0; width:0; border-left:1px solid var(--rule-2)}
+.g-now{position:absolute; top:0; bottom:0; width:0; border-left:2px solid var(--crit)}
+.g-now span{position:absolute; top:2px; left:4px; font:500 11px/1.2 var(--f-body); color:var(--crit); white-space:nowrap; background:var(--surface); padding:0 3px}
+.g-ms{grid-row:1; justify-self:center; width:14px; height:14px; position:relative; margin:3px 0}
+.g-ms::before{content:""; position:absolute; inset:1px; background:var(--ink); transform:rotate(45deg)}
+.g-ms::after{content:attr(data-m); position:absolute; right:18px; top:0; line-height:14px; font:500 11px/14px var(--f-mono); color:var(--ink)}
+.legend-ms{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:6px 24px; margin-top:12px; font-size:13px; line-height:1.6}
+.legend-ms b{font-family:var(--f-mono); font-weight:500; margin-right:6px}
+
+/* ---------- questions ---------- */
+.q{border:1px solid var(--rule-2); background:var(--surface); padding:16px 20px 14px; margin:0; min-width:0}
+.q legend{font:700 15px/1.5 var(--f-display); padding:0 8px; margin-left:-8px}
+.q legend .qi{font:500 12px/1 var(--f-mono); color:var(--accent-ink); margin-right:8px}
+.q .why{font-size:13px; color:var(--ink-2); line-height:1.7; max-width:46em; margin-bottom:8px}
+.q label{display:flex; gap:10px; align-items:flex-start; padding:7px 0; cursor:pointer; font-size:14px; line-height:1.65}
+.q input[type=radio]{margin-top:5px; accent-color:var(--accent); flex:none}
+.q label .tag{margin-left:6px}
+.qs{display:grid; gap:14px}
+.qout-wrap{display:flex; flex-direction:column; gap:10px; margin-top:6px}
+textarea{width:100%; min-height:200px; font:12.5px/1.7 var(--f-mono); padding:12px 14px; background:var(--surface-2); color:var(--ink); border:1px solid var(--rule-2); resize:vertical}
+.btn{font:500 14px/1 var(--f-body); padding:11px 18px; background:var(--accent); color:#fff; border:1px solid var(--accent); cursor:pointer; border-radius:3px}
+:root[data-theme="dark"] .btn{color:#0D141A}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .btn{color:#0D141A} }
+.btn.ghost{background:transparent; color:var(--accent-ink)}
+.btn:hover{filter:brightness(1.08)}
+.row{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+.status{font-size:13px; color:var(--ok); min-height:1.5em}
+
+/* checklist */
+.steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; border:1px solid var(--rule-2); background:var(--surface)}
+.steps li{display:grid; grid-template-columns:auto 1fr; gap:12px; padding:12px 18px; border-bottom:1px solid var(--rule); align-items:baseline}
+.steps li:last-child{border-bottom:0}
+.steps .box{width:14px; height:14px; border:1.5px solid var(--rule-2); border-radius:2px; transform:translateY(3px)}
+.steps b{font-weight:500}
+.cols2{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px}
+.cols2 > div{background:var(--surface); border:1px solid var(--rule-2); padding:16px 18px}
+.cols2 h3{font-size:14.5px; margin:0 0 8px}
+
+footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--rule-2); font-size:12.5px; color:var(--muted); line-height:1.7}
+
+@media (max-width:640px){
+  body{font-size:14.5px}
+  .tblock-main{padding:20px 18px 18px}
+  .brief{padding:18px}
+  .dec{padding:16px 14px}
+  .q{padding:14px 14px 10px}
+}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+@media print{
+  body{background:#fff; font-size:12px}
+  .toc{display:none}
+  .frame{display:block}
+  .tbl,.gantt,pre,.formula{overflow:visible}
+  section{break-inside:auto}
+  tr,.dec,.q{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="tblock">
+  <div class="tblock-main">
+    <div class="eyebrow">Geant4 11.3.2 · Simulation Plan · Draft v0.1</div>
+    <h1>ミュオグラフィ検出器 Geant4 シミュレーション計画</h1>
+    <p class="tblock-sub">創発的研究支援事業の研究計画書に書かれた検出器の仕様と数値目標を、シミュレーションで確かめる順番とコードの作り方を整理した検討用の計画です。決めてほしい項目は §12 にまとめています。</p>
+  </div>
+  <div class="tcells">
+    <div class="tcell"><div class="k">研究課題</div><div class="v">自律移動型ミュオグラフィによる地下密度分布マッピング技術の創出</div></div>
+    <div class="tcell"><div class="k">研究代表者</div><div class="v">田中 香津生</div></div>
+    <div class="tcell"><div class="k">対象期間</div><div class="v">フェーズ1　2026年8月 – 2029年7月（3年8カ月）</div></div>
+    <div class="tcell"><div class="k">根拠文書</div><div class="v mono">創発_研究計画書本文_二代目パネル創発研究者_2026年度版.docx</div></div>
+    <div class="tcell"><div class="k">作成日 / 状態</div><div class="v">2026-10-21 / 検討用ドラフト</div></div>
+    <div class="tcell"><div class="k">実行環境</div><div class="v">WSL2 · 24 コア · 23 GB · Geant4 11.3.2（MT 有効）</div></div>
+  </div>
+</header>
+
+<div class="frame">
+<nav class="toc" aria-label="目次">
+  <div class="eyebrow">Index</div>
+  <ol>
+    <li><a href="#s1"><span class="n">1</span>数値目標</a></li>
+    <li><a href="#s2"><span class="n">2</span>概算による見通し</a></li>
+    <li><a href="#s3"><span class="n">3</span>既存コード</a></li>
+    <li><a href="#s4"><span class="n">4</span>全体設計</a></li>
+    <li><a href="#s5"><span class="n">5</span>設計判断</a></li>
+    <li><a href="#s6"><span class="n">6</span>シナリオ</a></li>
+    <li><a href="#s7"><span class="n">7</span>基準パラメータ</a></li>
+    <li><a href="#s8"><span class="n">8</span>出力と指標</a></li>
+    <li><a href="#s9"><span class="n">9</span>検証</a></li>
+    <li><a href="#s10"><span class="n">10</span>スケジュール</a></li>
+    <li><a href="#s11"><span class="n">11</span>リスク</a></li>
+    <li><a href="#s12"><span class="n">12</span>確認事項</a></li>
+    <li><a href="#s13"><span class="n">13</span>最初の2週間</a></li>
+    <li><a href="#sa"><span class="n">付</span>概算の前提</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<div class="brief">
+  <h2>要点</h2>
+  <ol>
+    <li>計画書の数値目標を <b>9 項目（T1–T9）</b>に分け、それぞれをシミュレーションで答える問いに置き換えました（§1）。</li>
+    <li>概算では、60 cm 角・2 層の検出器は土被り 10 m で<b>約 9 Hz</b>、50 m で約 1.2 Hz です。計画書の「砂と粘土の 0.4 g/cm³ の差を 2 時間で分離」は成り立つ範囲に入ります。一方「1 m 空洞を 8 時間走査で同定」は <b>3〜5σ 付近の境界</b>にあり、有意度の定義と土被りで結論が変わります（§2）。</li>
+    <li>既存コードは受け入れ約 10⁻⁴・単スレッド・重みなしで、計画書の目標を回すには足りません。<b>二段構成（地盤輸送 → 検出器応答）、重み付きの方向指定発生、MT 実行</b>を提案します（§4–5）。</li>
+    <li>検出器応答は L0（理想ピクセル）、L1（パラメトリック）、L2（光学）の 3 段階にします。ライトガイド厚みは L2 で調べ、その結果で L1 を較正します（§5 D6）。</li>
+    <li>計画書の数値のうち<b>定義が決まっていないもの</b>（円錐角 50° が半角か全角か、角度分解能 3° が σ か FWHM か、「分離」の基準、土被り）が結論を左右します。先に決めたい 7 項目を §12 に置きました。</li>
+  </ol>
+</div>
+
+<!-- ================= 1 ================= -->
+<section id="s1">
+  <div class="sec-head"><span class="n">§1</span><h2>計画書が求める数値目標</h2></div>
+  <p class="prose">計画書の「研究項目１–４」と年次計画書から、シミュレーションで検証できる数値を取り出しました。右端の列が、各項目でコードに答えさせる内容です。</p>
+  <div class="tbl wide" style="margin-top:16px"><table>
+    <thead><tr><th class="id">ID</th><th>項目</th><th>計画書の記述</th><th>時期</th><th>シミュレーションで答えること</th></tr></thead>
+    <tbody>
+    <tr><td class="id">T1</td><td>検出器の最終仕様</td><td>60 cm 角、10 kg 以下、8 W 以下、角度分解能 3°、製造コスト 200 万円以内</td><td>2028 年度</td><td>角度分解能と有効面積のうち、幾何と光学で決まる部分。質量・電力・費用は設計表で管理し、シミュレーションの対象にはしません。</td></tr>
+    <tr><td class="id">T2</td><td>位置分解能</td><td>シンチレータピッチ 2 cm を基準に評価。1 層プロトタイプは 5〜10 cm 角</td><td>2026 年度</td><td>ピッチ・厚み・層間距離ごとの検出効率と角度応答。ライトガイド厚みの設計確定に使う光学応答。</td></tr>
+    <tr><td class="id">T3</td><td>角度分解能・受け入れ</td><td>角度分解能 3°、円錐角 50°</td><td>2027 年度</td><td>飛跡再構成の角度残差（σ、68% 包含）と、天頂角ごとの有効面積。</td></tr>
+    <tr><td class="id">T4</td><td>地上ファントム</td><td>想定透視対象物を 10 cm 程度の分解能で捉える</td><td>2027 年度</td><td>ファントム像の幅と、距離・測定時間の関係。</td></tr>
+    <tr><td class="id">T5</td><td>砂/粘土の境界と密度差</td><td>砂 1.4、粘土 1.8 g/cm³ の境界。密度差 0.2〜0.4 g/cm³。1 点 2 時間。Geant4 予測は「深さ 10 m、2 時間、0.4 g/cm³ の差を分離」</td><td>2027 年度</td><td>計画書の予測を再現できるか。密度差・深さ・測定時間に対する有意度の変化。</td></tr>
+    <tr><td class="id">T6</td><td>3 次元密度と含水比の時系列</td><td>降雨応答・水位変動を模擬した動的計測</td><td>2028 年度</td><td>浸潤前線や局所的な緩みを差分解析で検出できる最小の変化量。</td></tr>
+    <tr><td class="id">T7</td><td>空洞・埋設物</td><td>予測は「10 m 区間を 8 時間走査して 1 m 規模の空洞を同定」</td><td>2029 年度</td><td>予測の再現。検出確率と誤警報率。位置の推定誤差。</td></tr>
+    <tr><td class="id">T8</td><td>砂泥分布の再構成</td><td>予測は「3 日走査で砂泥分布を再構成」</td><td>2029 年度</td><td>再構成の水平・深さ方向の分解能。</td></tr>
+    <tr><td class="id">T9</td><td>実証区間の事前予測</td><td>1 km 程度の歩道付き幹線下水道。ボーリング既知区間</td><td>2029 年度</td><td>現地の土被り・地層に合わせた測定時間、検出限界、走査計画。</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn" style="margin-top:16px">
+    <div class="t">定義が未確定の項目</div>
+    <p>円錐角 50° は半角か全角か（Q2）。角度分解能 3° は σ か FWHM か（§2 の表参照）。「分離できる」の統計的な基準（Q3）。下水道の土被り（Q1）。試験溝と管路の寸法（§7）。これらは §12 で決めます。</p>
+  </div>
+</section>
+
+<!-- ================= 2 ================= -->
+<section id="s2">
+  <div class="sec-head"><span class="n">§2</span><h2>概算による見通し</h2></div>
+  <p class="prose">コードを書く前に、解析的な概算でレートと有意度の桁を確認しました。前提は付録にあります。誤差は ±30% 程度を見込んでください。ここで外れた箇所が、シミュレーションで最初に確かめるところになります。</p>
+
+  <h3>60 cm 角・2 層検出器のレート</h3>
+  <div class="tbl mid"><table>
+    <caption>層間 30 cm、垂直強度 I_v は土被りに応じた最小透過エネルギー以上のミュオン、ρ = 1.6 g/cm³ 一様、検出効率 100%、天頂角 60° まで積分</caption>
+    <thead><tr><th class="num">土被り h</th><th class="num">面密度 X</th><th class="num">透過に要る E</th><th class="num">垂直強度 I_v</th><th class="num">同時計数率</th><th class="num">2 時間あたり</th><th class="num">垂直 3°×3° ビン / 2 h</th></tr></thead>
+    <tbody>
+    <tr><td class="num">0 m</td><td class="num">0</td><td class="num">—</td><td class="num">88.7</td><td class="num">28.5 Hz</td><td class="num">20.5 万件</td><td class="num">630（±4%）</td></tr>
+    <tr><td class="num">3 m</td><td class="num">480 g/cm²</td><td class="num">1.1 GeV</td><td class="num">59.1</td><td class="num">19.2 Hz</td><td class="num">13.8 万件</td><td class="num">420（±5%）</td></tr>
+    <tr><td class="num">5 m</td><td class="num">800 g/cm²</td><td class="num">1.8 GeV</td><td class="num">46.1</td><td class="num">15.0 Hz</td><td class="num">10.8 万件</td><td class="num">328（±5%）</td></tr>
+    <tr><td class="num">10 m</td><td class="num">1600 g/cm²</td><td class="num">3.5 GeV</td><td class="num">27.6</td><td class="num">9.1 Hz</td><td class="num">6.6 万件</td><td class="num">196（±7%）</td></tr>
+    <tr><td class="num">20 m</td><td class="num">3200 g/cm²</td><td class="num">7.1 GeV</td><td class="num">13.2</td><td class="num">4.4 Hz</td><td class="num">3.2 万件</td><td class="num">94（±10%）</td></tr>
+    <tr><td class="num">50 m</td><td class="num">8000 g/cm²</td><td class="num">17.9 GeV</td><td class="num">3.5</td><td class="num">1.2 Hz</td><td class="num">0.85 万件</td><td class="num">25（±20%）</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small" style="margin-top:6px">I_v の単位は m⁻² s⁻¹ sr⁻¹。同時計数率は 60 cm 角の 2 枚が 30 cm 離れた配置（層間 20 cm なら約 1.2 倍、40 cm なら約 0.8 倍）。</p>
+
+  <div class="figure" style="margin-top:16px">
+    <div class="charts">
+      <div>
+        <div class="chart-title">同時計数率と土被り</div>
+        <svg class="chart" viewBox="0 0 480 292" role="img" aria-labelledby="c1t c1d">
+<title id="c1t">土被りと同時計数率</title><desc id="c1d">60 cm角・層間30 cmの2層検出器の同時計数率は、土被り0 mで約28 Hz、10 mで約9 Hz、50 mで約1.2 Hz。</desc>
+<line class="c-grid" x1="54" y1="246.0" x2="464" y2="246.0"/>
+<text class="c-tick" x="46" y="250.0" text-anchor="end">0</text>
+<line class="c-grid" x1="54" y1="171.3" x2="464" y2="171.3"/>
+<text class="c-tick" x="46" y="175.3" text-anchor="end">10</text>
+<line class="c-grid" x1="54" y1="96.7" x2="464" y2="96.7"/>
+<text class="c-tick" x="46" y="100.7" text-anchor="end">20</text>
+<line class="c-grid" x1="54" y1="22.0" x2="464" y2="22.0"/>
+<text class="c-tick" x="46" y="26.0" text-anchor="end">30</text>
+<text class="c-tick" x="54.0" y="264" text-anchor="middle">0</text>
+<text class="c-tick" x="136.0" y="264" text-anchor="middle">10</text>
+<text class="c-tick" x="218.0" y="264" text-anchor="middle">20</text>
+<text class="c-tick" x="300.0" y="264" text-anchor="middle">30</text>
+<text class="c-tick" x="382.0" y="264" text-anchor="middle">40</text>
+<text class="c-tick" x="464.0" y="264" text-anchor="middle">50</text>
+<text class="c-tick" x="54" y="12">同時計数率 (Hz)</text>
+<text class="c-tick" x="259.0" y="284" text-anchor="middle">土被り h (m)　密度 1.6 g/cm³ 一様</text>
+<polyline class="c-line" points="54.0,33.5 70.4,82.4 78.6,103.0 95.0,133.8 115.5,160.0 136.0,177.8 177.0,200.1 218.0,213.0 300.0,226.7 382.0,233.4 464.0,237.1"/>
+<circle class="c-dot" cx="54.0" cy="33.5" r="4.5"><title>h = 0 m: 28.46 Hz</title></circle>
+<circle class="c-dot" cx="70.4" cy="82.4" r="4.5"><title>h = 2 m: 21.91 Hz</title></circle>
+<circle class="c-dot" cx="78.6" cy="103.0" r="4.5"><title>h = 3 m: 19.15 Hz</title></circle>
+<circle class="c-dot" cx="95.0" cy="133.8" r="4.5"><title>h = 5 m: 15.02 Hz</title></circle>
+<circle class="c-dot" cx="115.5" cy="160.0" r="4.5"><title>h = 7.5 m: 11.52 Hz</title></circle>
+<circle class="c-dot" cx="136.0" cy="177.8" r="4.5"><title>h = 10 m: 9.13 Hz</title></circle>
+<circle class="c-dot" cx="177.0" cy="200.1" r="4.5"><title>h = 15 m: 6.14 Hz</title></circle>
+<circle class="c-dot" cx="218.0" cy="213.0" r="4.5"><title>h = 20 m: 4.42 Hz</title></circle>
+<circle class="c-dot" cx="300.0" cy="226.7" r="4.5"><title>h = 30 m: 2.59 Hz</title></circle>
+<circle class="c-dot" cx="382.0" cy="233.4" r="4.5"><title>h = 40 m: 1.69 Hz</title></circle>
+<circle class="c-dot" cx="464.0" cy="237.1" r="4.5"><title>h = 50 m: 1.19 Hz</title></circle>
+<text class="c-lab" x="62.0" y="27.5" text-anchor="start">28.5 Hz</text>
+<text class="c-lab" x="86.6" y="94.0" text-anchor="start">19.2 Hz</text>
+<text class="c-lab" x="144.0" y="168.8" text-anchor="start">9.1 Hz</text>
+<text class="c-lab" x="226.0" y="204.0" text-anchor="start">4.4 Hz</text>
+<text class="c-lab" x="460.0" y="227.1" text-anchor="end">1.2 Hz</text>
+</svg>
+      </div>
+      <div>
+        <div class="chart-title">垂直 3°×3° ビンの 2 時間あたり件数</div>
+        <svg class="chart" viewBox="0 0 480 292" role="img" aria-labelledby="c2t c2d">
+<title id="c2t">垂直方向3°×3°ビンの2時間あたり件数</title><desc id="c2d">60 cm角検出器の垂直近傍3°×3°ビンの件数は、土被り3 mで約420件、10 mで約196件、50 mで約25件。統計誤差はそれぞれ約5%、7%、20%。</desc>
+<line class="c-grid" x1="54" y1="246.0" x2="464" y2="246.0"/>
+<text class="c-tick" x="46" y="250.0" text-anchor="end">0</text>
+<line class="c-grid" x1="54" y1="178.8" x2="464" y2="178.8"/>
+<text class="c-tick" x="46" y="182.8" text-anchor="end">150</text>
+<line class="c-grid" x1="54" y1="111.6" x2="464" y2="111.6"/>
+<text class="c-tick" x="46" y="115.6" text-anchor="end">300</text>
+<line class="c-grid" x1="54" y1="44.4" x2="464" y2="44.4"/>
+<text class="c-tick" x="46" y="48.4" text-anchor="end">450</text>
+<text class="c-tick" x="54" y="12">件数 / 2 時間 / ビン</text>
+<path class="c-bar" d="M72.0,246 V60.7 Q72.0,57.7 75.0,57.7 H115.0 Q118.0,57.7 118.0,60.7 V246 Z"><title>h = 3 m: 420 件 (±5%)</title></path>
+<text class="c-lab c-strong" x="95.0" y="40.7" text-anchor="middle">420</text>
+<text class="c-tick" x="95.0" y="52.7" text-anchor="middle">±5%</text>
+<text class="c-tick" x="95.0" y="264" text-anchor="middle">3 m</text>
+<path class="c-bar" d="M154.0,246 V102.3 Q154.0,99.3 157.0,99.3 H197.0 Q200.0,99.3 200.0,102.3 V246 Z"><title>h = 5 m: 328 件 (±6%)</title></path>
+<text class="c-lab c-strong" x="177.0" y="82.3" text-anchor="middle">328</text>
+<text class="c-tick" x="177.0" y="94.3" text-anchor="middle">±6%</text>
+<text class="c-tick" x="177.0" y="264" text-anchor="middle">5 m</text>
+<path class="c-bar" d="M236.0,246 V161.1 Q236.0,158.1 239.0,158.1 H279.0 Q282.0,158.1 282.0,161.1 V246 Z"><title>h = 10 m: 196 件 (±7%)</title></path>
+<text class="c-lab c-strong" x="259.0" y="141.1" text-anchor="middle">196</text>
+<text class="c-tick" x="259.0" y="153.1" text-anchor="middle">±7%</text>
+<text class="c-tick" x="259.0" y="264" text-anchor="middle">10 m</text>
+<path class="c-bar" d="M318.0,246 V206.9 Q318.0,203.9 321.0,203.9 H361.0 Q364.0,203.9 364.0,206.9 V246 Z"><title>h = 20 m: 94 件 (±10%)</title></path>
+<text class="c-lab c-strong" x="341.0" y="186.9" text-anchor="middle">94</text>
+<text class="c-tick" x="341.0" y="198.9" text-anchor="middle">±10%</text>
+<text class="c-tick" x="341.0" y="264" text-anchor="middle">20 m</text>
+<path class="c-bar" d="M400.0,246 V237.8 Q400.0,234.8 403.0,234.8 H443.0 Q446.0,234.8 446.0,237.8 V246 Z"><title>h = 50 m: 25 件 (±20%)</title></path>
+<text class="c-lab c-strong" x="423.0" y="217.8" text-anchor="middle">25</text>
+<text class="c-tick" x="423.0" y="229.8" text-anchor="middle">±20%</text>
+<text class="c-tick" x="423.0" y="264" text-anchor="middle">50 m</text>
+<text class="c-tick" x="259.0" y="284" text-anchor="middle">土被り h</text>
+</svg>
+      </div>
+    </div>
+    <figcaption><b>読み取り。</b>土被り 10 m では 2 時間で約 6.6 万件、垂直近傍の 3°×3° ビンに約 200 件が入ります。50 m（首都圏外郭放水路の深さの目安）では同じ 2 時間で 1 ビンに 25 件しか入らず、統計誤差は 20% に達します。深い管路では測定時間を 1 桁延ばすか、ビンを粗くする必要があります。</figcaption>
+  </div>
+
+  <h3>計画書の予測値との照合</h3>
+  <div class="tbl mid"><table>
+    <thead><tr><th>計画書の予測</th><th>概算</th><th>見立て</th></tr></thead>
+    <tbody>
+    <tr><td>深さ 10 m、1 点 2 時間で、砂 1.4 と粘土 1.8 g/cm³ の 0.4 g/cm³ の差を分離</td>
+        <td>10 m 全層が 1.4 か 1.8 かで、垂直強度は 31.0 と 24.8（比 1.25）。垂直ビンの 2 時間の件数は約 221 と 176。差 45 件に対して σ ≈ 20 で、<b>ビン対あたり約 2σ</b>。</td>
+        <td><span class="tag ok">成立圏内</span> 複数ビンをまとめれば有意度は上がります。層が 10 m 全部ではなく一部だけの場合は差が小さくなるため、SC-01 で層厚を振って確認します。</td></tr>
+    <tr><td>10 m 区間を 8 時間走査して 1 m 規模の空洞を同定</td>
+        <td>土被り 10 m、ρ = 1.6 で空洞が真上にある場合、空洞方向の強度は <b>+9.7%</b>。空洞方向（半角 2.9°）には 1 時間に約 280 件で、超過は約 27 件。1 時間で約 1.6σ、8 時間静止で約 4.6σ。</td>
+        <td><span class="tag tbd">境界</span> 走査で斜め方向のデータが混ざるため、実効は 3〜5σ と見ます。土被り・空洞形状・有意度の基準で結論が変わるため、SC-07 の最優先課題です。</td></tr>
+    <tr><td>3 日走査で砂泥分布を再構成</td>
+        <td>3 日 = 72 時間。10 m の土被りでは 2 時間の約 36 倍の統計。</td>
+        <td><span class="tag opt">要シミュレーション</span> 再構成の分解能は逆問題の設計に依存するため、概算では見積もれません。</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>ピッチと層間距離から決まる角度分解能</h3>
+  <div class="tbl mid"><table>
+    <caption>垂直入射での角度分解能 σθ（度）。ピクセル同定が理想で、多重散乱・誤同定を含まない値</caption>
+    <thead><tr><th>ピッチ \ 層間距離</th><th class="num">15 cm</th><th class="num">20 cm</th><th class="num">30 cm</th><th class="num">40 cm</th></tr></thead>
+    <tbody>
+    <tr><td>1 cm</td><td class="num hit">1.56</td><td class="num hit">1.17</td><td class="num hit">0.78</td><td class="num hit">0.58</td></tr>
+    <tr><td>2 cm（計画書の基準）</td><td class="num miss">3.12</td><td class="num hit">2.34</td><td class="num hit">1.56</td><td class="num hit">1.17</td></tr>
+    <tr><td>3 cm</td><td class="num miss">4.68</td><td class="num miss">3.51</td><td class="num hit">2.34</td><td class="num hit">1.76</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small" style="margin-top:6px">緑は σθ ≤ 3°、赤は 3° 超。式は σθ = √2 · p / (√12 · D)。3° が FWHM の意味なら σ は 1.27° で、ピッチ 2 cm には層間距離 37 cm 以上が要ります。この解釈の違いで検出器の高さが変わるため、Q2 の隣で定義を確認します。</p>
+
+  <div class="note warn" style="margin-top:20px">
+    <div class="t">質量予算の机上確認</div>
+    <p>60 cm × 60 cm × 1 cm のプラスチックシンチレータ（1.03 g/cm³）は 1 層で約 3.7 kg、2 層で約 7.4 kg です。ライトガイド、SiPM 基板、筐体を足す前に、計画書の「10 kg 以下」の大半を使います。計画書にシンチレータ厚みの記載はなく、既存コードは 1 cm です。SC-02 で厚み 0.5 cm の案も評価します。</p>
+  </div>
+  <div class="note" style="margin-top:12px">
+    <div class="t">含水率と密度差の対応</div>
+    <p>水の密度は 1 g/cm³ なので、体積含水率が Δθv 増えると密度は約 Δθv × 1 g/cm³ 増えます。計画書の密度差 0.2〜0.4 g/cm³ は、含水率の 20〜40 vol% の変化にあたり、空隙率 0.4 程度の土が乾燥から飽和まで変わる幅に近い値です。ミュオグラフィが測るのは面密度なので、含水率の変化と乾燥密度の違いは 1 回の測定では区別できません。時系列の差分で区別する設計にします（SC-08）。</p>
+  </div>
+</section>
+
+<!-- ================= 3 ================= -->
+<section id="s3">
+  <div class="sec-head"><span class="n">§3</span><h2>既存コードの棚卸し</h2></div>
+  <p class="prose">同じ <code>geant4-all/geant4-11/</code> の下に 4 つの試作があります。どれも <code>G4RunManager</code>（単スレッド）で、物理リストは FTFP_BERT です。</p>
+  <div class="tbl wide" style="margin-top:16px"><table>
+    <thead><tr><th>プロジェクト</th><th>内容</th><th>そのまま使える点</th><th>課題</th></tr></thead>
+    <tbody>
+    <tr><td><b>geant4-sample</b><span class="sub">ブランチ 2d-array</span></td>
+        <td>20×20 ピクセル（2×2×1 cm）の 2 層、層間 20 cm。土ブロックは 10×8×10 m で 50×50×100 cm の空洞入り。5 密度ブロック版のレポートもある。</td>
+        <td>CopyNo の LXXYY 方式。cos²θ と二重べき乗エネルギー分布の LUT サンプリング。</td>
+        <td>土は G4_CONCRETE の密度を書き換えたもの。幾何が試行ごとに書き換えられている。出力は <code>tracking.dat</code> への追記。</td></tr>
+    <tr><td><b>geant4-muography-underground</b></td>
+        <td>16×16 ピクセルの 2 層。30 m ワールド。砂・粘土・岩の X スライス 5 枚。方向指定発生（Method B）。<code>BG_UNIFORM</code> で背景ラン。</td>
+        <td>最も整理されている。Python 解析（<code>decode_copyno.py</code>、<code>analyze_hits.py</code>、<code>compare_hole_vs_bg.py</code>）。</td>
+        <td>Method B は重みがなく絶対レートが出せない。受け入れ約 10⁻⁴。10M イベントで約 20 時間。</td></tr>
+    <tr><td><b>geant4-muographysperical</b><span class="sub">と -test</span></td>
+        <td>直径 1 m の円柱空洞と、6 m × 5 cm のストリップ状の長尺検出器。</td>
+        <td>3D 再構成と MLEM の Python スクリプト群、Plotly の 3D 表示。</td>
+        <td>検出器が計画書の形（2 cm ピクセル）と異なる。</td></tr>
+    <tr><td><b>sakura-simulation</b></td>
+        <td>CsI 5×5（1 cm）と側面 SiPM 4 枚。<code>G4OpticalPhysics</code> を登録。</td>
+        <td>光学応答の雛形。シンチレーション光子の追跡と側面読み出しの構成。</td>
+        <td>センサーが空気材質で PDE を持たない。光子数だけを出力する。ライトガイドはない。</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="cols2" style="margin-top:20px">
+    <div>
+      <h3>引き継ぐもの</h3>
+      <ul class="plain">
+        <li>CopyNo の符号化（ピクセル数が 100 未満なら 30×30 でもそのまま使えます）</li>
+        <li>Python の解析スクリプトと、ホール／背景の比較手順</li>
+        <li>sakura の光学設定（L2 の出発点）</li>
+        <li>バッチ実行はファイル名で決める運用と、Qt を避ける工夫</li>
+      </ul>
+    </div>
+    <div>
+      <h3>変えるもの</h3>
+      <ul class="plain">
+        <li>受け入れ約 10⁻⁴ と単スレッド：10⁵ 件のコインシデンスに 10⁹ イベントが必要</li>
+        <li>重みなしの方向指定発生：絶対レートに戻せない</li>
+        <li>土を G4_CONCRETE で代用：含水率の寄与を入れられない</li>
+        <li>ofstream による追記出力：MT で使えず、実行位置にも依存</li>
+        <li>幾何のハードコードと環境変数のスイッチ</li>
+        <li>WSL2 の Qt でバッチ終了後にハングする件（CLAUDE.md の記載）</li>
+      </ul>
+    </div>
+  </div>
+  <p class="small" style="margin-top:12px">課題の数値（受け入れ約 10⁻⁴、10M イベントで約 20 時間、ハングの件）は <code>geant4-muography-underground/CLAUDE.md</code> の記述によります。この環境で再測定はしていません。</p>
+</section>
+
+<!-- ================= 4 ================= -->
+<section id="s4">
+  <div class="sec-head"><span class="n">§4</span><h2>全体設計</h2></div>
+  <p class="prose">地盤シナリオと検出器設計を別々に回せるように、Geant4 の実行を 2 段に分けます。Stage A は地表から検出器直上の面までを通し、Stage B は検出器の応答だけを計算します。</p>
+
+  <figure class="figure" style="margin-top:16px">
+    <div class="scroll">
+<svg class="diagram" viewBox="0 0 800 262" role="img" aria-labelledby="dg1t dg1d">
+  <title id="dg1t">シミュレーションの処理の流れ</title>
+  <desc id="dg1d">一次粒子生成、Stage A 地盤輸送、Stage B 検出器応答、再構成、判定と報告の順に流れる。設定はマクロで与え、検証は全段にかかる。</desc>
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 Z" class="d-arrow"/></marker></defs>
+  <rect class="d-bar" x="20" y="12" width="760" height="34"/>
+  <text class="d-s" x="400" y="33" text-anchor="middle">設定：マクロの /muo/… コマンド（検出器・地盤・一次粒子・出力段・乱数シード）。実行ごとに meta.json へ保存</text>
+
+  <rect class="d-box" x="20" y="72" width="112" height="62"/>
+  <text class="d-t" x="76" y="98" text-anchor="middle">一次粒子生成</text>
+  <text class="d-s" x="76" y="116" text-anchor="middle">方向指定 + 重み</text>
+
+  <rect class="d-box a" x="182" y="72" width="112" height="62"/>
+  <text class="d-t" x="238" y="98" text-anchor="middle">Stage A</text>
+  <text class="d-s" x="238" y="116" text-anchor="middle">地盤輸送</text>
+
+  <rect class="d-box a" x="344" y="72" width="112" height="62"/>
+  <text class="d-t" x="400" y="98" text-anchor="middle">Stage B</text>
+  <text class="d-s" x="400" y="116" text-anchor="middle">検出器応答 L0/L1/L2</text>
+
+  <rect class="d-box" x="506" y="72" width="112" height="62"/>
+  <text class="d-t" x="562" y="98" text-anchor="middle">再構成</text>
+  <text class="d-s" x="562" y="116" text-anchor="middle">角度・透過率・3D</text>
+
+  <rect class="d-box" x="668" y="72" width="112" height="62"/>
+  <text class="d-t" x="724" y="98" text-anchor="middle">判定・報告</text>
+  <text class="d-s" x="724" y="116" text-anchor="middle">有意度・ROC</text>
+
+  <line class="d-line" x1="132" y1="103" x2="180" y2="103" marker-end="url(#ar)"/>
+  <line class="d-line" x1="294" y1="103" x2="342" y2="103" marker-end="url(#ar)"/>
+  <line class="d-line" x1="456" y1="103" x2="504" y2="103" marker-end="url(#ar)"/>
+  <line class="d-line" x1="618" y1="103" x2="666" y2="103" marker-end="url(#ar)"/>
+
+  <text class="d-m" x="319" y="156" text-anchor="middle">phasespace.csv</text>
+  <text class="d-m" x="481" y="156" text-anchor="middle">hits.csv</text>
+  <text class="d-m" x="643" y="156" text-anchor="middle">tables / png</text>
+
+  <path class="d-br" d="M20,174 V180 H294 V174"/>
+  <text class="d-s" x="157" y="196" text-anchor="middle">Geant4 実行ファイル（Stage A）</text>
+  <path class="d-br" d="M344,174 V180 H456 V174"/>
+  <text class="d-s" x="400" y="196" text-anchor="middle">Geant4（Stage B）</text>
+  <path class="d-br" d="M506,174 V180 H780 V174"/>
+  <text class="d-s" x="643" y="196" text-anchor="middle">Python（numpy / pandas / matplotlib）</text>
+
+  <rect class="d-bar" x="20" y="216" width="760" height="34"/>
+  <text class="d-s" x="400" y="237" text-anchor="middle">検証 V1–V8：飛程表・海面スペクトル・受け入れの解析式・重みの収束・一段と二段の一致・実機との比較</text>
+</svg>
+    </div>
+    <figcaption><b>図 1.</b>処理の流れ。Stage A の出力（検出器直上の面を通る全粒子）が Stage B の入力になります。検出器を変えるたびに土中輸送をやり直す必要はありません。</figcaption>
+  </figure>
+
+  <figure class="figure" style="margin-top:16px">
+    <div class="scroll">
+<svg class="diagram" viewBox="0 0 760 340" role="img" aria-labelledby="dg2t dg2d">
+  <title id="dg2t">下水道内の検出器と地盤の断面</title>
+  <desc id="dg2d">管軸方向の断面。水面に浮かぶドローンの検出器から、半角 50° の円錐が地表へ広がる。地盤は左が砂、右が粘土で、1 m の空洞と埋設管が描かれている。</desc>
+  <rect class="g-sand" x="40" y="60" width="340" height="190" fill-opacity=".85"/>
+  <rect class="g-clay" x="380" y="60" width="340" height="190" fill-opacity=".85"/>
+  <line class="g-ground" x1="40" y1="60" x2="720" y2="60"/>
+  <text class="g-tl" x="46" y="52">地表</text>
+  <text class="g-t" x="52" y="82">砂 1.4 g/cm³</text>
+  <text class="g-t" x="640" y="82" text-anchor="end">粘土 1.8 g/cm³</text>
+
+  <!-- pipe -->
+  <rect class="g-wall" x="40" y="250" width="680" height="12"/>
+  <rect class="g-void" x="40" y="262" width="680" height="44"/>
+  <rect class="g-wall" x="40" y="306" width="680" height="10"/>
+  <rect class="g-water" x="40" y="292" width="680" height="14" fill-opacity=".9"/>
+  <text class="g-ts" x="46" y="330">管壁（コンクリート）と水深 30 cm 以上の水面</text>
+
+  <!-- cone: detector at x=330,y=268 ; half-angle 50deg ; surface dy=208 -> dx=248 -->
+  <polygon class="g-cone" points="330,268 82,60 578,60"/>
+  <line class="g-dim" x1="330" y1="268" x2="330" y2="62" stroke-dasharray="2 3"/>
+  <text class="g-ts" x="338" y="170">垂直</text>
+  <path class="g-dim" d="M330,236 A32,32 0 0 0 307,243"/>
+  <text class="g-ts" x="292" y="232">θ</text>
+  <text class="g-tl" x="98" y="112">受け入れ円錐（半角 θ ≤ 50° と仮定、Q2）</text>
+
+  <!-- detector on drone -->
+  <rect class="g-det" x="316" y="266" width="28" height="4"/>
+  <rect class="g-det" x="316" y="276" width="28" height="4"/>
+  <rect class="g-wall" x="310" y="282" width="40" height="10" fill-opacity=".6"/>
+  <text class="g-ts" x="352" y="276">2 層検出器（ドローン搭載）</text>
+  <path class="g-dim" d="M374,298 H520" marker-end="url(#ar)"/>
+  <text class="g-ts" x="380" y="292">走査方向</text>
+
+  <!-- cavity and buried pipe -->
+  <rect class="g-void" x="470" y="150" width="20" height="20"/>
+  <text class="g-t" x="498" y="165">空洞 1 m</text>
+  <circle class="g-obj" cx="215" cy="140" r="9"/>
+  <text class="g-t" x="230" y="144">埋設物</text>
+
+  <!-- depth dimension -->
+  <line class="g-dim" x1="700" y1="62" x2="700" y2="266"/>
+  <line class="g-dim" x1="694" y1="62" x2="706" y2="62"/>
+  <line class="g-dim" x1="694" y1="266" x2="706" y2="266"/>
+  <text class="g-tl" x="692" y="170" text-anchor="end">土被り h</text>
+  <text class="g-ts" x="692" y="186" text-anchor="end">3〜50 m を掃引</text>
+
+  <!-- scale -->
+  <line class="g-dim" x1="60" y1="222" x2="120" y2="222"/>
+  <line class="g-dim" x1="60" y1="217" x2="60" y2="227"/>
+  <line class="g-dim" x1="120" y1="217" x2="120" y2="227"/>
+  <text class="g-ts" x="90" y="240" text-anchor="middle">3 m（20 px = 1 m）</text>
+</svg>
+    </div>
+    <figcaption><b>図 2.</b>管軸方向の断面（h = 10 m の縮尺）。検出器は各走査位置で管軸方向と横方向の 2 つの角度を測ります。位置を変えたときの視差から対象の深さが、角度から水平位置が決まります。深さは視差の基線（走査長）で決まるため、水平位置より分解能が悪くなる見込みです。SC-07 で定量化します。</figcaption>
+  </figure>
+</section>
+
+<!-- ================= 5 ================= -->
+<section id="s5">
+  <div class="sec-head"><span class="n">§5</span><h2>設計判断</h2></div>
+  <p class="prose">コードの作り方で選択肢があるものを D1–D9 にまとめました。各項目に採用案、代替案、理由を書いています。覆したい項目があれば §12 で指定してください。</p>
+  <div class="decs" style="margin-top:16px">
+
+    <div class="dec"><div><span class="did">D1</span><h3>二段構成</h3></div>
+    <dl>
+      <dt>採用案</dt><dd>Stage A で地表から検出器直上の面までミュオンと二次粒子を輸送し、その面を通る粒子を位相空間ファイルに保存する。Stage B はそのファイルを読み、検出器の応答だけを計算する。同じイベントの粒子は同じ Geant4 イベントとして再生する。</dd>
+      <dt>代替</dt><dd>現行どおり、地表から検出器までを一つのジオメトリで通す（一段）。</dd>
+      <dt>理由</dt><dd>地盤シナリオ（SC-01, 06, 07, 08）と検出器設計（SC-02〜04）を独立に回せます。δ 線や制動放射の e±・γ も同じイベントで保持できます。一段との差は V5 で確認します。</dd>
+    </dl></div>
+
+    <div class="dec"><div><span class="did">D2</span><h3>一次粒子の発生</h3></div>
+    <dl>
+      <dt>採用案</dt><dd>検出器から見た方向（cosθ 一様、φ 一様）とエネルギー（ln E 一様）を先に選び、検出器を中心とする半径 r_t の円盤から出発点を決めて、地表までさかのぼって発生させる。各イベントに重みを付けて絶対レートを復元する。</dd>
+      <dt>代替</dt><dd>地表の広い面から cos²θ で一様に発生（geant4-sample）。または重みなしの Method B（geant4-muography-underground）。</dd>
+      <dt>理由</dt><dd>一様発生では必要な件数に届きません。Method B は効率が上がる代わりに絶対レートを失います。重みがあれば測定時間（秒）に換算でき、ポアソン擬似実験を組めます。r_t、E_lo、θmax は V4 の収束試験で決めます。</dd>
+    </dl>
+<div class="formula" style="grid-column:1/-1">w = I(E,θ) · E · ln(E_hi/E_lo) · 2π(1 − cosθmax) · π r_t² / N_gen   [Hz / イベント]
+N_obs(T) = T · Σ w_i · 1[コインシデンス]       （T：測定時間 [s]）</div></div>
+
+    <div class="dec"><div><span class="did">D3</span><h3>宇宙線スペクトル</h3></div>
+    <dl>
+      <dt>採用案</dt><dd>Gaisser 式に低エネルギーと大天頂角の補正を加えた形（Guan ら 2015）をパラメトリックに実装する。CRY や EXPACS は照合と背景の評価に使う。</dd>
+      <dt>代替</dt><dd>現行の cos²θ に、E⁻²·⁷（1〜100 GeV）または 357 MeV で折れ曲がる二重べき乗を組み合わせる。</dd>
+      <dt>理由</dt><dd>土被り 10 m で透過に要るエネルギーは約 3.5 GeV で、この付近のスペクトル形がレートと密度コントラストを決めます。角度依存を含む式にします。絶対値の系統誤差は数十% あり得るため、比と差分で評価し、スペクトルを切り替えた変動幅を系統誤差として記録します。</dd>
+    </dl></div>
+
+    <div class="dec"><div><span class="did">D4</span><h3>物理リスト</h3></div>
+    <dl>
+      <dt>採用案</dt><dd>Stage A は FTFP_BERT（現行）を基準にし、EM を <code>G4EmStandardPhysics_option4</code> に替えた結果と比べる。光学物理（<code>G4OpticalPhysics</code>）は Stage B の L2 だけで使う。</dd>
+      <dt>理由</dt><dd>土中のエネルギー損失は電離・制動放射・対生成・光核反応で決まります。差は V1 の飛程表との比較で見ます。飛程カットは土中で大きく、検出器内で小さく、領域ごとに設定します。</dd>
+    </dl></div>
+
+    <div class="dec"><div><span class="did">D5</span><h3>土壌と水の材料</h3></div>
+    <dl>
+      <dt>採用案</dt><dd><code>SoilModel</code> クラスで、かさ密度・体積含水率・空隙率と乾燥土の組成（SiO₂ 主体）から、土粒子・水・空気の混合物として <code>G4Material</code> を作る。</dd>
+      <dt>代替</dt><dd>現行どおり G4_CONCRETE または G4_SILICON_DIOXIDE の密度だけを変える。</dd>
+      <dt>理由</dt><dd>含水比と水位の時系列（T6）では水の寄与を分けて入れる必要があります。水の Z/A は約 0.555 で、岩石（約 0.5）より質量あたりのエネルギー損失が大きくなります。密度だけの近似との差の大きさは V1 の付随試験で見ます。</dd>
+    </dl></div>
+
+    <div class="dec"><div><span class="did">D6</span><h3>検出器応答の 3 段階</h3></div>
+    <dl>
+      <dt>L0</dt><dd>理想ピクセル。各ピクセルのエネルギー付与がしきい値を超えたらヒット。</dd>
+      <dt>L1</dt><dd>パラメトリック。エネルギー付与 → 光電子数 → 抵抗チェーン 4 隅の電荷比 → 重心位置にノイズを加え → ピクセル同定（誤同定確率を含む）。</dd>
+      <dt>L2</dt><dd>光学。シンチレーション光子をライトガイド・反射材・SiPM 面まで追跡する。</dd>
+      <dt>採用案</dt><dd>全シナリオを L0 で回す。SC-04 の L2 で L1 のパラメータ（光量、広がり、誤同定率）を較正し、SC-03 と SC-07 は L1 で再評価する。</dd>
+      <dt>理由</dt><dd>プラスチックシンチレータは約 1 万光子/MeV で、1 cm 厚を通るミュオンは約 2 MeV を付与します。1 イベントあたり 2×10⁴ 個規模の光子を 10⁷ イベント追跡するのは現実的ではありません。</dd>
+    </dl></div>
+
+    <div class="dec"><div><span class="did">D7</span><h3>出力形式</h3></div>
+    <dl>
+      <dt>採用案</dt><dd><code>G4AnalysisManager</code> の CSV 出力（events / hits / phasespace）。スレッドごとにファイルを分け、実行ごとにマクロ・乱数シード・Git ハッシュを <code>meta.json</code> に保存する。解析は Python（numpy・pandas・matplotlib、導入済み）。</dd>
+      <dt>代替</dt><dd>ROOT または HDF5。</dd>
+      <dt>理由</dt><dd>この Geant4 のビルドは hdf5 が無効で、環境にも ROOT・uproot・h5py がありません。容量が問題になった時点で形式を見直します。現行の ofstream 追記は MT で使えません。</dd>
+    </dl></div>
+
+    <div class="dec"><div><span class="did">D8</span><h3>並列実行</h3></div>
+    <dl>
+      <dt>採用案</dt><dd><code>G4TaskRunManager</code>。ユーザーアクションは <code>BuildForMaster</code> と <code>Build</code> に分け、カウンタと出力をスレッドごとに持つ。ジョブは乱数シード別に分割してシェルスクリプトで束ねる。</dd>
+      <dt>理由</dt><dd>この環境は 24 コア・23 GB です。単スレッドで約 20 時間の 10M イベントが、理想的な並列効率なら 1 時間前後になります。実測値は最初の実行で記録します。</dd>
+    </dl></div>
+
+    <div class="dec"><div><span class="did">D9</span><h3>設定の持ち方</h3></div>
+    <dl>
+      <dt>採用案</dt><dd>全パラメータをマクロの <code>/muo/…</code> コマンド（messenger）で指定する。<code>BG_UNIFORM</code> のような環境変数のスイッチは廃止する。</dd>
+      <dt>理由</dt><dd>実行条件がマクロとして残り、後から再現できます。</dd>
+    </dl>
+<pre style="grid-column:1/-1"><span class="c"># コマンド案（名称は実装時に調整）</span>
+/muo/run/stage        A                <span class="c"># A | B | full</span>
+/muo/source/mode      aimed
+/muo/source/targetRadius 1.0 m
+/muo/source/zenithMax 60 deg
+/muo/soil/layer       0 sand 1.4 g/cm3 0.0    <span class="c"># 番号 名前 かさ密度 含水率</span>
+/muo/soil/overburden  10 m
+/muo/det/pitch        2 cm
+/muo/det/gap          30 cm
+/muo/det/nxy          30 30
+/muo/out/prefix       sc01_h10m</pre></div>
+
+  </div>
+</section>
+
+<!-- ================= 6 ================= -->
+<section id="s6">
+  <div class="sec-head"><span class="n">§6</span><h2>シナリオ一覧</h2></div>
+  <p class="prose">T1–T9 に答えるシナリオを SC-01〜09 に分けました。優先度が「最高」の SC-01 を最初に回し、計画書の予測が再現できるかを確かめます。</p>
+  <div class="tbl wide" style="margin-top:16px"><table>
+    <thead><tr><th class="id">ID</th><th>目的</th><th>条件</th><th>掃引する量</th><th>出力と判定</th><th>段</th><th>優先</th></tr></thead>
+    <tbody>
+    <tr><td class="id">SC-01</td><td>計画書の予測の再現<span class="sub">T5</span></td><td>土被り 10 m。砂 1.4 と粘土 1.8 g/cm³ の鉛直境界。60 cm 角、2 層、ピッチ 2 cm、層間 30 cm。</td><td>密度差 0.2 / 0.3 / 0.4。層厚。測定時間 0.5〜8 h</td><td>角度ビンごとの透過率比と有意度。Q3 の基準で「分離」が成り立つか。</td><td>A+B(L0)</td><td><span class="tag must">最高</span></td></tr>
+    <tr><td class="id">SC-02</td><td>1 層の検出器応答<span class="sub">T2</span></td><td>5 cm 角と 10 cm 角、ピッチ 2 cm。</td><td>厚み 0.5 / 1 / 1.5 cm。入射角。エッジの不感帯</td><td>検出効率と入射角の関係。質量予算への影響。</td><td>B(L0)</td><td><span class="tag must">高</span></td></tr>
+    <tr><td class="id">SC-03</td><td>2 層の角度分解能と受け入れ<span class="sub">T1, T3</span></td><td>2 層。筐体と層間材を入れる。</td><td>ピッチ 1 / 2 / 3 cm、層間 15〜40 cm、サイズ 10 / 20 / 60 cm</td><td>σθ と 68% 包含角。天頂角ごとの有効面積。多重散乱の寄与。</td><td>B(L0→L1)</td><td><span class="tag must">高</span></td></tr>
+    <tr><td class="id">SC-04</td><td>ライトガイド厚み<span class="sub">T1, T2</span></td><td>2 cm ピッチの配列に、ライトガイドと SiPM を付ける。</td><td>ライトガイド厚み 0〜10 mm。60 cm 規模への外挿</td><td>フラッドマップのピクセル分離（ピーク/谷比）と誤同定率。L1 の較正値。</td><td>B(L2)</td><td><span class="tag must">高</span></td></tr>
+    <tr><td class="id">SC-05</td><td>地上ファントム<span class="sub">T4</span></td><td>検出器と、Pb・Fe・コンクリート・空洞の 10 cm 級ファントム。</td><td>距離 1 / 2 / 3 m。測定時間</td><td>像の幅（FWHM）と距離の関係。</td><td>A+B</td><td><span class="tag rec">中</span></td></tr>
+    <tr><td class="id">SC-06</td><td>模擬土壌試験溝<span class="sub">T5</span></td><td>試験溝に砂と粘土の層。寸法は企業へ確認（暫定値で先に感度を見る）。</td><td>密度差 0.2〜0.4。測定点の配置</td><td>実験前に予測を固定し、実測と比較する。</td><td>A+B(L1)</td><td><span class="tag must">高</span></td></tr>
+    <tr><td class="id">SC-07</td><td>管路と走査<span class="sub">T7, T8, T9</span></td><td>管（壁・水面）、地層、1 m 空洞、埋設管。10 m 区間 8 h と 3 日の走査。</td><td>土被り 3 / 5 / 10 / 20 / 50 m。空洞の横位置 0 / 2 / 5 m。位置誤差 10〜50 cm、姿勢誤差 0.5〜2°</td><td>検出確率と誤警報率（ROC）。位置の推定誤差。3D 再構成の分解能。</td><td>A+B(L1)</td><td><span class="tag must">最高</span></td></tr>
+    <tr><td class="id">SC-08</td><td>含水比・水位の時系列<span class="sub">T6</span></td><td>浸潤前線の移動。地下水位の変化。</td><td>Δθv 0〜0.3（Δρ ≈ Δθv × 1 g/cm³）。水位 ±1 m。気圧・温度の変動（数%）</td><td>差分解析で検出できる最小の変化量。</td><td>A+B(L1)</td><td><span class="tag rec">中</span></td></tr>
+    <tr><td class="id">SC-09</td><td>背景と誤計数<span class="sub">T1, T3</span></td><td>土・管壁由来の低エネルギー e±・γ。停止ミュオン。シャワー（CRY）。天然放射能による単独計数。</td><td>しきい値。同時計数窓</td><td>コインシデンス内の汚染率と、角度分解能・密度推定へのバイアス。</td><td>A+B</td><td><span class="tag rec">中</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= 7 ================= -->
+<section id="s7">
+  <div class="sec-head"><span class="n">§7</span><h2>基準パラメータ</h2></div>
+  <p class="prose">マクロの既定値になる基準値と掃引範囲です。出所が「暫定」のものは確認が取れるまでこの値で先に進めます。</p>
+  <div class="tbl wide" style="margin-top:16px"><table>
+    <thead><tr><th>区分</th><th>パラメータ</th><th>基準値</th><th>掃引範囲</th><th>出所</th></tr></thead>
+    <tbody>
+    <tr><td rowspan="6">検出器</td><td>シンチレータ</td><td>PVT（G4_PLASTIC_SC_VINYLTOLUENE）</td><td>—</td><td>既存コード</td></tr>
+    <tr><td>ピクセル</td><td>2 × 2 cm、厚み 1 cm</td><td>厚み 0.5〜1.5 cm</td><td>計画書（ピッチ）/ 既存コード（厚み）</td></tr>
+    <tr><td>配列</td><td>30 × 30 / 層（60 cm 角）。試作 3×3〜5×5</td><td>10・20・60 cm 角</td><td>計画書</td></tr>
+    <tr><td>層間距離</td><td>30 cm</td><td>15〜40 cm</td><td>既存コードは 20 cm</td></tr>
+    <tr><td>筐体</td><td>Al 2 mm + 防水アクリル</td><td>なし / あり</td><td><span class="tag tbd">暫定</span></td></tr>
+    <tr><td>L0 のしきい値</td><td>0.5 MeV（MIP は 1 cm で約 2 MeV）</td><td>0.2〜1 MeV</td><td><span class="tag tbd">暫定</span></td></tr>
+    <tr><td rowspan="4">地盤</td><td>砂 / 粘土</td><td>1.4 / 1.8 g/cm³</td><td>差 0.2〜0.4</td><td>計画書</td></tr>
+    <tr><td>土被り h</td><td>10 m</td><td>3 / 5 / 10 / 20 / 50 m</td><td><span class="tag tbd">Q1</span></td></tr>
+    <tr><td>空洞</td><td>1 m の立方体、空気</td><td>横位置 0〜5 m、深さ</td><td>計画書（規模）/ <span class="tag tbd">暫定</span>（形状）</td></tr>
+    <tr><td>組成</td><td>乾燥土 SiO₂ 主体 + 水 + 空気</td><td>含水率 0〜0.3</td><td><span class="tag tbd">暫定</span></td></tr>
+    <tr><td rowspan="3">管路</td><td>管壁</td><td>コンクリート 0.3 m</td><td>0.2〜0.5 m</td><td><span class="tag tbd">暫定</span></td></tr>
+    <tr><td>内径</td><td>3 m</td><td>2〜5 m</td><td><span class="tag tbd">暫定</span></td></tr>
+    <tr><td>水深</td><td>30 cm</td><td>30〜100 cm</td><td>計画書（30 cm 以上）</td></tr>
+    <tr><td rowspan="4">一次粒子</td><td>スペクトル</td><td>Guan 2015 の修正 Gaisser 式</td><td>CRY で照合</td><td>D3</td></tr>
+    <tr><td>天頂角の上限 θmax</td><td>60°</td><td>50〜70°</td><td>V4 で収束を確認</td></tr>
+    <tr><td>ターゲット円盤の半径 r_t</td><td>1 m</td><td>0.5〜3 m</td><td>既存コードは 1 m。V4 で確認</td></tr>
+    <tr><td>E_lo</td><td>最小透過エネルギーの 0.5 倍</td><td>0.3〜0.7 倍</td><td>V4 で確認</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= 8 ================= -->
+<section id="s8">
+  <div class="sec-head"><span class="n">§8</span><h2>出力と評価指標</h2></div>
+  <div class="cols2">
+    <div>
+      <h3>出力するテーブル</h3>
+      <ul class="plain">
+        <li><code>phasespace.csv</code>：event, w, pdg, E, x, y, z, ux, uy, uz, t（Stage A の出力）</li>
+        <li><code>hits.csv</code>：event, w, layer, ix, iy, edep, t, track, pdg</li>
+        <li><code>truth.csv</code>：event, w, E0, θ0, φ0, 検出面でのミュオンの方向</li>
+        <li><code>meta.json</code>：マクロ、乱数シード、Git ハッシュ、実行時間</li>
+      </ul>
+    </div>
+    <div>
+      <h3>評価指標</h3>
+      <ul class="plain">
+        <li>角度残差 σθ と 68% 包含角（真の方向との差）</li>
+        <li>透過率 T(θ, φ) = N_obs / N_open（土なしの参照ランが分母）</li>
+        <li>有意度 Z = (N_obs − N_exp) / √N_exp</li>
+        <li>検出確率と誤警報率（ROC）。ポアソン擬似実験で求める</li>
+        <li>測定時間ごとの密度分解能 δρ</li>
+        <li>水平・深さ方向の位置推定誤差</li>
+      </ul>
+    </div>
+  </div>
+  <h3>再構成の段階</h3>
+  <ol class="plain prose" style="padding-left:1.4em">
+    <li>2 層のヒットから飛跡の方向を求め、角度ビンに集計する。</li>
+    <li>土なしの参照ランとの比から、フラックスモデルを逆に引いて面密度 ρL に換算する。</li>
+    <li>複数の走査位置から視差を使って逆投影する（簡易な位置推定）。</li>
+    <li>感度行列を使った MLEM / SART で 3D 密度を求める（geant4-muographysperical のスクリプトを移植）。</li>
+    <li>均質地盤（H0）と空洞あり（H1）の仮説検定で、検出確率と誤警報率を出す。</li>
+  </ol>
+</section>
+
+<!-- ================= 9 ================= -->
+<section id="s9">
+  <div class="sec-head"><span class="n">§9</span><h2>検証</h2></div>
+  <p class="prose">結果を計画書や論文に使う前に、コード自体の正しさを確かめる項目です。V1〜V5 を SC-01 の前に済ませます。</p>
+  <div class="tbl mid" style="margin-top:16px"><table>
+    <thead><tr><th class="id">ID</th><th>確認すること</th><th>比較対象</th><th>合格の目安</th></tr></thead>
+    <tbody>
+    <tr><td class="id">V1</td><td>ミュオンの飛程とエネルギー損失</td><td>標準岩石の飛程表（Groom ら 2001）。水を含む土との差も確認</td><td>飛程が数% 以内で一致</td></tr>
+    <tr><td class="id">V2</td><td>発生器が出すスペクトル</td><td>海面の垂直強度（&gt;1 GeV で約 70 m⁻²s⁻¹sr⁻¹）と水平面フラックス（約 1 cm⁻²min⁻¹）</td><td>概算コードと同程度（§2 では 60 と 0.81）</td></tr>
+    <tr><td class="id">V3</td><td>幾何受け入れ</td><td>2 枚板テレスコープの解析式</td><td>重み付き MC が統計誤差内で一致</td></tr>
+    <tr><td class="id">V4</td><td>重みと方向指定発生の収束</td><td>r_t、E_lo、θmax を広げた結果</td><td>広げても結果が統計誤差内で不変</td></tr>
+    <tr><td class="id">V5</td><td>一段と二段の等価性</td><td>浅い設定で、一段と A→B の二段を比べる</td><td>ヒット分布が統計誤差内で一致</td></tr>
+    <tr><td class="id">V6</td><td>実機との比較</td><td>1 層試作の宇宙線計数。5 cm 角 1 層の単独計数は約 0.3 Hz、5 cm 角 2 層（層間 5 cm）の同時計数は地上で約 0.11 Hz の概算</td><td>実測との差を要因に分けて説明できる</td></tr>
+    <tr><td class="id">V7</td><td>既存結果の再現</td><td>geant4-muography-underground のホール/背景のデータ</td><td>差を説明できる（任意）</td></tr>
+    <tr><td class="id">V8</td><td>計画書の 3 つの予測</td><td>SC-01、SC-07 の結果</td><td>再現の可否と、乖離の要因（モデル差か定義差か）</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= 10 ================= -->
+<section id="s10">
+  <div class="sec-head"><span class="n">§10</span><h2>スケジュール</h2></div>
+  <p class="prose">計画書のフェーズ 1（2026 年 8 月〜2029 年 7 月）に合わせた配置です。赤い線は今日（2026-10-21）、縦の細線は年度の切れ目です。</p>
+  <div class="gantt" style="margin-top:16px"><div class="g-in">
+    <div class="g-row g-head">
+      <div class="g-label"></div>
+      <div class="g-track">
+        <div class="g-yr" style="grid-column:1/9">2026 年度</div>
+        <div class="g-yr" style="grid-column:9/21">2027 年度</div>
+        <div class="g-yr" style="grid-column:21/33">2028 年度</div>
+        <div class="g-yr" style="grid-column:33/37">2029</div>
+      </div>
+    </div>
+    <div class="g-row g-head">
+      <div class="g-label dim" style="font-size:12px">月</div>
+      <div class="g-track" id="months"></div>
+    </div>
+    <div class="g-body">
+      <div class="g-ov"><div class="g-fy" style="left:22.222%"></div><div class="g-fy" style="left:55.556%"></div><div class="g-fy" style="left:88.889%"></div><div class="g-now" style="left:7.36%"><span>今日</span></div></div>
+      <div class="g-row"><div class="g-label">WP0 要件確定と予測の再現<span class="sc">SC-01 · V1–V5</span></div><div class="g-track"><div class="g-bar" style="grid-column:3/6"></div></div></div>
+      <div class="g-row"><div class="g-label">WP1 コード基盤<span class="sc">二段・重み・MT・出力</span></div><div class="g-track"><div class="g-bar" style="grid-column:4/7"></div></div></div>
+      <div class="g-row"><div class="g-label">WP2 検出器応答 L0/L1<span class="sc">SC-02, 03, 09</span></div><div class="g-track"><div class="g-bar" style="grid-column:4/12"></div></div></div>
+      <div class="g-row"><div class="g-label">WP3 光学とライトガイド<span class="sc">SC-04（L2）</span></div><div class="g-track"><div class="g-bar" style="grid-column:5/9"></div><div class="g-bar b2" style="grid-column:21/27"></div></div></div>
+      <div class="g-row"><div class="g-label">WP4 解析パイプライン<span class="sc">再構成・密度推定</span></div><div class="g-track"><div class="g-bar" style="grid-column:5/15"></div></div></div>
+      <div class="g-row"><div class="g-label">WP5 ファントムと模擬土壌試験溝<span class="sc">SC-05, 06</span></div><div class="g-track"><div class="g-bar" style="grid-column:6/18"></div></div></div>
+      <div class="g-row"><div class="g-label">WP6 管路・走査・時系列<span class="sc">SC-07, 08</span></div><div class="g-track"><div class="g-bar" style="grid-column:15/27"></div></div></div>
+      <div class="g-row"><div class="g-label">WP7 実証サイトの事前予測<span class="sc">SC-07（現地条件）</span></div><div class="g-track"><div class="g-bar" style="grid-column:24/33"></div></div></div>
+      <div class="g-row"><div class="g-label">WP8 実測との比較と較正<span class="sc">V6, V8</span></div><div class="g-track"><div class="g-bar" style="grid-column:33/37"></div></div></div>
+      <div class="g-row"><div class="g-label">計画書のマイルストーン</div><div class="g-track"><div class="g-ms" data-m="M1" style="grid-column:8"></div><div class="g-ms" data-m="M2" style="grid-column:20"></div><div class="g-ms" data-m="M3" style="grid-column:32"></div><div class="g-ms" data-m="M4" style="grid-column:36"></div></div></div>
+    </div>
+  </div></div>
+  <div class="legend-ms">
+    <div><b>M1</b>2027-03　1 層の位置分解能評価の完了、2 層の設計確定</div>
+    <div><b>M2</b>2028-03　2 層の飛跡再構成と砂泥境界・密度差の実証</div>
+    <div><b>M3</b>2029-03　60 cm 角実証機の完成、実証区間の確定</div>
+    <div><b>M4</b>2029-07　幹線下水道での実証完了とフェーズ 1 総括</div>
+  </div>
+  <p class="small" style="margin-top:12px">M1〜M4 は年次研究計画書の「到達目標」から取りました。WP の期間は筆者の提案で、計画書の記述ではありません。</p>
+</section>
+
+<!-- ================= 11 ================= -->
+<section id="s11">
+  <div class="sec-head"><span class="n">§11</span><h2>リスクと対応</h2></div>
+  <div class="tbl mid"><table>
+    <thead><tr><th class="id">ID</th><th>リスク</th><th>対応</th></tr></thead>
+    <tbody>
+    <tr><td class="id">R1</td><td>統計が足りない（受け入れ約 10⁻⁴）</td><td>方向指定発生に重みを付ける、二段構成、MT 実行（D1, D2, D8）。</td></tr>
+    <tr><td class="id">R2</td><td>スペクトルと土壌組成の系統誤差（絶対値で数十%）</td><td>比と差分で評価する。スペクトルと組成を切り替えて変動幅を系統誤差として記録する。</td></tr>
+    <tr><td class="id">R3</td><td>光学シミュレーションが遅い</td><td>L2 は少数ピクセルで較正に使い、本番は L1 で回す（D6）。</td></tr>
+    <tr><td class="id">R4</td><td>試験溝と管路の条件が決まらない</td><td>パラメータ化し、暫定値で先に感度を見る。確認事項（§12）に挙げる。</td></tr>
+    <tr><td class="id">R5</td><td>質量 10 kg の制約と検出器仕様がぶつかる</td><td>シンチレータだけで 2 層 7.4 kg（§2）。厚み 0.5 cm の案を SC-02 で評価する。</td></tr>
+    <tr><td class="id">R6</td><td>WSL2 の Qt でバッチ終了後にハングする</td><td>バッチでは可視化を作らない。出力は逐次フラッシュし、ハング時は kill で終了しても結果が残る形にする。</td></tr>
+    <tr><td class="id">R7</td><td>計画書の予測値が再現できない</td><td>モデル差と定義差に分けて原因を示し、計画書側の記述の修正案を出す（V8）。</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= 12 ================= -->
+<section id="s12">
+  <div class="sec-head"><span class="n">§12</span><h2>確認事項</h2></div>
+  <p class="prose">先に決めたい 7 項目です。既定は推奨案を選んであります。変えたい項目だけ選び直し、「回答をまとめる」を押してください。出力された文面を、そのまま Claude に貼り付けられます。</p>
+  <form id="qform" class="qs" style="margin-top:16px" onsubmit="return false">
+
+    <fieldset class="q" data-q="Q1 土被り">
+      <legend><span class="qi">Q1</span>想定する下水道の土被りはどこまで見ますか</legend>
+      <p class="why">計画書には深さの記載がありません。10 m で 2 時間に約 200 件の垂直ビンが、50 m では約 25 件になります（§2）。</p>
+      <label><input type="radio" name="q1" id="q1a" checked data-text="3〜10 m を基準にし、20 m・50 m は感度確認として掃引する"><span>3〜10 m を基準にし、20 m・50 m は感度確認として掃引する <span class="tag rec">推奨</span></span></label>
+      <label><input type="radio" name="q1" id="q1b" data-text="3〜20 m を基準にする"><span>3〜20 m を基準にする</span></label>
+      <label><input type="radio" name="q1" id="q1c" data-text="外郭放水路級（約 50 m）を主対象にする"><span>外郭放水路級（約 50 m）を主対象にする</span></label>
+    </fieldset>
+
+    <fieldset class="q" data-q="Q2 円錐角と角度分解能の定義">
+      <legend><span class="qi">Q2</span>「円錐角 50°」と「角度分解能 3°」の定義はどちらですか</legend>
+      <p class="why">半角か全角かで有効面積が変わります。3° が FWHM なら、ピッチ 2 cm には層間 37 cm 以上が要ります（§2）。</p>
+      <label><input type="radio" name="q2" id="q2a" checked data-text="円錐角は半角（天頂角 50° まで）、角度分解能 3° は σ"><span>円錐角は半角（天頂角 50° まで）、角度分解能 3° は σ <span class="tag rec">推奨</span></span></label>
+      <label><input type="radio" name="q2" id="q2b" data-text="円錐角は半角、角度分解能 3° は FWHM"><span>円錐角は半角、角度分解能 3° は FWHM</span></label>
+      <label><input type="radio" name="q2" id="q2c" data-text="円錐角は全角（天頂角 25° まで）"><span>円錐角は全角（天頂角 25° まで）</span></label>
+    </fieldset>
+
+    <fieldset class="q" data-q="Q3 「分離できる」の基準">
+      <legend><span class="qi">Q3</span>「分離できる」「同定できる」の統計的な基準は何にしますか</legend>
+      <p class="why">空洞の 8 時間走査は 3〜5σ 付近で、基準によって合否が分かれます（§2）。</p>
+      <label><input type="radio" name="q3" id="q3a" checked data-text="有意度 3σ を検出、5σ を確定とし、ROC（誤警報率 1%）で検出確率を併記する"><span>有意度 3σ を検出、5σ を確定とし、ROC（誤警報率 1%）で検出確率を併記する <span class="tag rec">推奨</span></span></label>
+      <label><input type="radio" name="q3" id="q3b" data-text="有意度 5σ のみを基準にする"><span>有意度 5σ のみを基準にする</span></label>
+      <label><input type="radio" name="q3" id="q3c" data-text="ROC の AUC 0.9 以上を基準にする"><span>ROC の AUC 0.9 以上を基準にする</span></label>
+    </fieldset>
+
+    <fieldset class="q" data-q="Q4 コードの土台">
+      <legend><span class="qi">Q4</span>新しいコードは何を土台にしますか</legend>
+      <p class="why">このディレクトリ（geant4-underground）には計画書の docx 以外にコードがなく、Git では未追跡です。</p>
+      <label><input type="radio" name="q4" id="q4a" checked data-text="geant4-muography-underground を土台に、このディレクトリへ移植して作り直す"><span>geant4-muography-underground を土台に、このディレクトリへ移植して作り直す <span class="tag rec">推奨</span></span></label>
+      <label><input type="radio" name="q4" id="q4b" data-text="geant4-sample（2d-array）を土台にする"><span>geant4-sample（2d-array）を土台にする</span></label>
+      <label><input type="radio" name="q4" id="q4c" data-text="既存コードを使わず、ゼロから書く"><span>既存コードを使わず、ゼロから書く</span></label>
+    </fieldset>
+
+    <fieldset class="q" data-q="Q5 出力形式">
+      <legend><span class="qi">Q5</span>出力形式は何にしますか</legend>
+      <p class="why">現在の Geant4 は hdf5 無効、環境に ROOT・uproot・h5py がありません。</p>
+      <label><input type="radio" name="q5" id="q5a" checked data-text="CSV（G4AnalysisManager）。容量が問題になった時点で再検討"><span>CSV（G4AnalysisManager）。容量が問題になった時点で再検討 <span class="tag rec">推奨</span></span></label>
+      <label><input type="radio" name="q5" id="q5b" data-text="ROOT を導入して使う"><span>ROOT を導入して使う</span></label>
+      <label><input type="radio" name="q5" id="q5c" data-text="HDF5 対応で Geant4 を再ビルドする"><span>HDF5 対応で Geant4 を再ビルドする</span></label>
+    </fieldset>
+
+    <fieldset class="q" data-q="Q6 土壌モデル">
+      <legend><span class="qi">Q6</span>土壌の材料モデルはどこまで作り込みますか</legend>
+      <p class="why">含水比の時系列（T6）では水の寄与を分ける必要があります（D5）。</p>
+      <label><input type="radio" name="q6" id="q6a" checked data-text="かさ密度・含水率・空隙率から作る簡易モデル（SiO₂ 主体 + 水 + 空気）"><span>かさ密度・含水率・空隙率から作る簡易モデル（SiO₂ 主体 + 水 + 空気） <span class="tag rec">推奨</span></span></label>
+      <label><input type="radio" name="q6" id="q6b" data-text="現行どおり、密度だけを変える"><span>現行どおり、密度だけを変える</span></label>
+      <label><input type="radio" name="q6" id="q6c" data-text="地盤工学の専門家と相談し、実際の土の化学組成まで入れる"><span>地盤工学の専門家と相談し、実際の土の化学組成まで入れる</span></label>
+    </fieldset>
+
+    <fieldset class="q" data-q="Q7 着手順">
+      <legend><span class="qi">Q7</span>最初に着手するのはどちらですか</legend>
+      <p class="why">WP2・3 は 2026 年度の検出器設計に、WP5・6 は 2027 年度以降の土壌実証に対応します。</p>
+      <label><input type="radio" name="q7" id="q7a" checked data-text="WP0・WP1 でコード基盤と SC-01 を先に作り、その後 WP2 と WP3 を並行する"><span>WP0・WP1 でコード基盤と SC-01 を先に作り、その後 WP2 と WP3 を並行する <span class="tag rec">推奨</span></span></label>
+      <label><input type="radio" name="q7" id="q7b" data-text="検出器設計（WP2・WP3）を先行する"><span>検出器設計（WP2・WP3）を先行する</span></label>
+      <label><input type="radio" name="q7" id="q7c" data-text="地盤・走査（WP5・WP6）を先行する"><span>地盤・走査（WP5・WP6）を先行する</span></label>
+    </fieldset>
+
+    <div class="qout-wrap">
+      <label for="qnote" class="small">補足があれば（試験溝や管路の寸法、使いたい資源など）</label>
+      <textarea id="qnote" style="min-height:84px" placeholder="例：試験溝は幅 2 m × 深さ 2 m × 長さ 10 m。企業に確認中。"></textarea>
+      <div class="row">
+        <button type="button" class="btn" id="qmake">回答をまとめる</button>
+        <button type="button" class="btn ghost" id="qcopy">コピー</button>
+        <span class="status" id="qstatus" role="status" aria-live="polite"></span>
+      </div>
+      <label for="qout" class="small">貼り付け用の文面</label>
+      <textarea id="qout" readonly></textarea>
+    </div>
+  </form>
+</section>
+
+<!-- ================= 13 ================= -->
+<section id="s13">
+  <div class="sec-head"><span class="n">§13</span><h2>最初の 2 週間</h2></div>
+  <ul class="steps">
+    <li><span class="box"></span><div><b>確認事項に回答する。</b>§12 の 7 項目。決まらないものは推奨案で進め、後から差し替えます。</div></li>
+    <li><span class="box"></span><div><b>プロジェクトの骨格を作る。</b>CMake、<code>Application_Main</code>、messenger、<code>SoilModel</code>、出力を、geant4-muography-underground から移植します。新しいディレクトリは Git 管理に加えます。</div></li>
+    <li><span class="box"></span><div><b>概算スクリプトを <code>analysis/</code> に置く。</b>§2 の数値を再計算できる形にし、SC-01 の初回見積もりに使います。</div></li>
+    <li><span class="box"></span><div><b>V1〜V3 を通す。</b>飛程表、海面スペクトル、2 枚板の受け入れ解析式との比較。</div></li>
+    <li><span class="box"></span><div><b>重み付き方向指定発生の収束（V4）を確認する。</b>r_t・E_lo・θmax を振って、結果が動かない範囲を決めます。</div></li>
+    <li><span class="box"></span><div><b>SC-01 を 10⁷ イベントで回す。</b>MT での実行時間を記録し、計画書の予測と並べた 1 ページのレポートにします。</div></li>
+  </ul>
+</section>
+
+<!-- ================= appendix ================= -->
+<section id="sa">
+  <div class="sec-head"><span class="n">付</span><h2>概算の前提</h2></div>
+  <div class="prose">
+    <p>§2 の数値は、次の前提で解析的に計算しました。スクリプトは §13 の手順で <code>analysis/</code> に移します。</p>
+    <ul class="plain">
+      <li>海面のミュオン微分強度は Gaisser 式に、低エネルギーと大天頂角の補正（Guan ら 2015）を加えた形。</li>
+      <li>土中のエネルギー損失は dE/dX = a + bE。a = 2.2 MeV cm²/g、b = 4.0×10⁻⁶ cm²/g（標準岩石の典型値）。透過に要る最小エネルギーは E_min = (a/b)(e^{bX} − 1)。ストラグリング、多重散乱は無視。</li>
+      <li>平らな地表。土被り h の斜め経路は X / cosθ。管と管壁による面密度は含めない。</li>
+      <li>検出器は 60 cm 角の 2 枚。検出効率 100%、ピクセル同定は理想。同時計数は、2 枚の水平投影の重なり面積に cosθ をかけて天頂角 60° まで積分。</li>
+      <li>エネルギー損失のパラメータ a, b と土の組成は標準岩石で代用しており、土の Z/A や含水の影響は含まれません。</li>
+    </ul>
+    <p>文献値との比較：垂直強度（&gt;1 GeV）は 60 m⁻²s⁻¹sr⁻¹（文献の目安は約 70）、水平面フラックス（&gt;0.1 GeV）は 0.81 cm⁻²min⁻¹（目安は約 1）で、どちらも 15〜20% 低めです。§2 の件数も同程度に低めと見てください。</p>
+  </div>
+</section>
+
+</main>
+</div>
+
+<footer>
+  根拠：創発_研究計画書本文_二代目パネル創発研究者_2026年度版.docx（本文と年次研究計画書）。既存コードの記述は geant4-sample、geant4-muography-underground、geant4-muographysperical、sakura-simulation のソースと CLAUDE.md によります。
+</footer>
+</div>
+
+<script>
+(function () {
+  // month ticks: 2026-08 .. 2029-07
+  var m = document.getElementById('months');
+  if (m) {
+    var mo = 8, html = '';
+    for (var i = 1; i <= 36; i++) {
+      html += '<div class="g-mo" style="grid-column:' + i + '">' + mo + '</div>';
+      mo = mo === 12 ? 1 : mo + 1;
+    }
+    m.innerHTML = html;
+  }
+
+  // table of contents: highlight current section
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var map = {};
+  links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (a) { a.removeAttribute('aria-current'); });
+          var a = map[e.target.id];
+          if (a) a.setAttribute('aria-current', 'true');
+        }
+      });
+    }, { rootMargin: '-10% 0px -80% 0px' });
+    Object.keys(map).forEach(function (id) {
+      var s = document.getElementById(id);
+      if (s) io.observe(s);
+    });
+  }
+
+  // questions
+  var form = document.getElementById('qform');
+  var out = document.getElementById('qout');
+  var note = document.getElementById('qnote');
+  var status = document.getElementById('qstatus');
+  var KEY = 'plan-geant4-answers-v1';
+
+  function load() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+      Object.keys(saved).forEach(function (id) {
+        if (id === 'note') { note.value = saved[id]; return; }
+        var el = document.getElementById(id);
+        if (el) el.checked = true;
+      });
+    } catch (e) { /* storage unavailable */ }
+  }
+  function save() {
+    try {
+      var s = {};
+      form.querySelectorAll('input[type=radio]:checked').forEach(function (r) { s[r.id] = true; });
+      s.note = note.value;
+      localStorage.setItem(KEY, JSON.stringify(s));
+    } catch (e) { /* storage unavailable */ }
+  }
+  function make() {
+    var lines = ['Plan.html の確認事項への回答（2026-10-21 版）', ''];
+    form.querySelectorAll('fieldset.q').forEach(function (fs) {
+      var sel = fs.querySelector('input:checked');
+      lines.push(fs.getAttribute('data-q') + '：' + (sel ? sel.getAttribute('data-text') : '未選択'));
+    });
+    if (note.value.trim()) { lines.push('', '補足：' + note.value.trim()); }
+    out.value = lines.join('\n');
+    status.textContent = '';
+    save();
+  }
+  function copy() {
+    if (!out.value) make();
+    var done = function () { status.textContent = 'コピーしました'; };
+    var fallback = function () {
+      out.removeAttribute('readonly'); out.select();
+      try { document.execCommand('copy'); done(); } catch (e) { status.textContent = '文面を選択して手動でコピーしてください'; }
+      out.setAttribute('readonly', '');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(out.value).then(done, fallback);
+    } else { fallback(); }
+  }
+  load(); make();
+  form.addEventListener('change', make);
+  note.addEventListener('input', save);
+  document.getElementById('qmake').addEventListener('click', make);
+  document.getElementById('qcopy').addEventListener('click', copy);
+})();
+</script>
+</body>
+</html>
